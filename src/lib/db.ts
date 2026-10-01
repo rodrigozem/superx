@@ -1,8 +1,8 @@
 import "server-only";
 
-import { mkdirSync } from "node:fs";
-import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+
+import { ensureDatabaseDirectory, resolveDatabasePath } from "./db-path";
 
 const globalForDb = globalThis as unknown as { __sistemaDb?: DatabaseSync };
 
@@ -31,10 +31,7 @@ function seedAdmin(db: DatabaseSync) {
 }
 
 function createDatabase() {
-  const directory = path.join(process.cwd(), "data");
-  mkdirSync(directory, { recursive: true });
-
-  const db = new DatabaseSync(path.join(directory, "app.db"));
+  const db = new DatabaseSync(ensureDatabaseDirectory(resolveDatabasePath()));
 
   db.exec(`
     PRAGMA journal_mode = WAL;
