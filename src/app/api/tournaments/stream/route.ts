@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic";
 
 const HEARTBEAT_MS = 25_000;
 
-function encodeEvent(name: string): Uint8Array {
-  return new TextEncoder().encode(`event: ${name}\ndata: 1\n\n`);
+function encodeEvent(name: string, data = ""): Uint8Array {
+  return new TextEncoder().encode(`event: ${name}\ndata: ${data}\n\n`);
 }
 
 /**
@@ -26,16 +26,18 @@ export async function GET(request: Request) {
     start(controller) {
       let closed = false;
 
-      const send = (name: string) => {
+      const send = (name: string, data?: string) => {
         if (closed) return;
         try {
-          controller.enqueue(encodeEvent(name));
+          controller.enqueue(encodeEvent(name, data));
         } catch {
           closed = true;
         }
       };
 
-      const unsubscribe = subscribeTournamentsChanged(() => send("changed"));
+      const unsubscribe = subscribeTournamentsChanged((originId) =>
+        send("changed", originId ?? ""),
+      );
       const heartbeat = setInterval(() => send("ping"), HEARTBEAT_MS);
 
       send("ready");

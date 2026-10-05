@@ -26,6 +26,8 @@ const SSE_DEBOUNCE_MS = 300;
 const RETRY_MS = 20_000;
 const POLL_MS = 60_000;
 const FOCUS_MIN_INTERVAL_MS = 10_000;
+// Só mostra "Sincronizando…" se demorar: syncs rápidos não fazem o LED piscar.
+const SYNCING_LABEL_DELAY_MS = 400;
 
 let state: SyncState = { status: "idle" };
 const listeners = new Set<(state: SyncState) => void>();
@@ -53,12 +55,15 @@ let started = false;
 let running = false;
 let rerun = false;
 let lastAttemptAt = 0;
+let clientId: string | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let syncingTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function startSyncEngine(): void {
   if (typeof window === "undefined" || started) return;
   started = true;
+  clientId = crypto.randomUUID();
 
   window.addEventListener("online", () => {
     void syncNow();
@@ -92,7 +97,9 @@ function connectEventSource(): void {
   if (typeof EventSource === "undefined") return;
 
   const source = new EventSource("/api/tournaments/stream");
-  source.addEventListener("changed", () => {
+  source.addEventListener("changed", (event) => {
+    const origin = (event as MessageEvent).data;
+    if (origin && origin === clientId) return; // eco da própria alteração
     scheduleSync(SSE_DEBOUNCE_MS);
   });
   // Erros (ex.: sessão expirada) derrubam a conexão; o próprio navegador
@@ -140,22 +147,34 @@ export async function syncNow(): Promise<void> {
 
   lastAttemptAt = Date.now();
   running = true;
-  setState({ status: "syncing" });
+  if (syncingTimer) clearTimeout(syncingTimer);
+  syncingTimer = setTimeout(() => {
+    syncingTimer = null;
+    setState({ status: "syncing" });
+  }, SYNCING_LABEL_DELAY_MS);
 
   try {
     const db = getDb();
     const initial = await captureInitialIds(db);
     const payload = await buildSyncPayload(db);
 
-    const result = await syncTournamentsAction(payload);
+    const result = await syncTournamentsAction(payload, clientId ?? undefined);
     if (!result.ok) throw new Error(result.error);
 
     const snapshot = parseSyncSnapshot(result.snapshot);
     if (!snapshot) throw new Error("Resposta de sincronização inválida.");
 
     await applySnapshot(db, snapshot, initial, payload.deletedTournamentIds);
+    if (syncingTimer) {
+      clearTimeout(syncingTimer);
+      syncingTimer = null;
+    }
     setState({ status: "synced", at: Date.now() });
   } catch (error) {
+    if (syncingTimer) {
+      clearTimeout(syncingTimer);
+      syncingTimer = null;
+    }
     setState({
       status: "error",
       message:

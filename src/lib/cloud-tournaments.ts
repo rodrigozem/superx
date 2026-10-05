@@ -12,10 +12,14 @@ import { notifyTournamentsChanged } from "./sync-bus";
  * exclusão sempre vence — o tombstone impede que outro aparelho ressuscite
  * um torneio apagado.
  *
- * Só avisa os navegadores (SSE) quando a transação alterou alguma linha:
- * reenvios idempotentes não disparam atualização em cascata.
+ * Só avisa os navegadores (SSE) quando a transação alterou alguma linha de
+ * verdade — o upsert compara os dados para que reenvios idempotentes não
+ * disparam atualização em cascata entre os aparelhos.
  */
-export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
+export function syncCloudTournaments(
+  payload: SyncPayload,
+  originId?: string,
+): SyncSnapshot {
   const db = getDb();
 
   let changed = false;
@@ -54,6 +58,7 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
         data = excluded.data,
         updated_at = excluded.updated_at
       WHERE excluded.updated_at >= cloud_tournaments.updated_at
+        AND cloud_tournaments.data IS NOT excluded.data
     `);
     for (const tournament of payload.tournaments) {
       if (isDeleted(tournament.id)) continue;
@@ -68,6 +73,7 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
         data = excluded.data,
         updated_at = excluded.updated_at
       WHERE excluded.updated_at >= cloud_matches.updated_at
+        AND cloud_matches.data IS NOT excluded.data
     `);
     for (const match of payload.matches) {
       if (isDeleted(match.tournamentId)) continue;
@@ -95,7 +101,7 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
     };
 
     db.exec("COMMIT");
-    if (changed) notifyTournamentsChanged();
+    if (changed) notifyTournamentsChanged(originId);
     return snapshot;
   } catch (error) {
     db.exec("ROLLBACK");

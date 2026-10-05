@@ -6,7 +6,7 @@ import "server-only";
  * via SSE são avisados e baixam o snapshot na hora.
  */
 
-type Listener = () => void;
+type Listener = (originId?: string) => void;
 
 const globalForBus = globalThis as unknown as {
   __tournamentSyncListeners?: Set<Listener>;
@@ -24,6 +24,7 @@ export function subscribeTournamentsChanged(listener: Listener): () => void {
   };
 }
 
-export function notifyTournamentsChanged(): void {
-  for (const listener of [...listeners()]) listener();
+/** `originId` identifica o cliente que fez a alteração (para ele ignorar o eco). */
+export function notifyTournamentsChanged(originId?: string): void {
+  for (const listener of [...listeners()]) listener(originId);
 }
