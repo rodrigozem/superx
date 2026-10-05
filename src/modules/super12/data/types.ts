@@ -36,4 +36,10 @@ export interface StoredMeta {
   value: unknown;
 }
 
+/** Tombstone local: torneio apagado que ainda precisa ser apagado na nuvem. */
+export interface DeletedTournament {
+  id: string;
+  deletedAt: string;
+}
+
 export const ACTIVE_TOURNAMENT_KEY = "activeTournamentId";

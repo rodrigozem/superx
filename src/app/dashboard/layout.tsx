@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { logout } from "@/app/actions/auth";
 import { requireUser } from "@/lib/dal";
+import { SyncStatus } from "@/modules/super12/ui/sync-status";
 
 export default async function DashboardLayout({
   children,
@@ -46,14 +47,18 @@ export default async function DashboardLayout({
             </nav>
           </div>
 
-          <form action={logout}>
-            <button
-              type="submit"
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              Sair
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            <SyncStatus />
+
+            <form action={logout}>
+              <button
+                type="submit"
+                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                Sair
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

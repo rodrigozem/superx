@@ -173,7 +173,8 @@ export function TournamentClient({ id }: TournamentClientProps) {
       )}
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Os dados ficam salvos apenas neste navegador.{" "}
+        Os dados ficam salvos neste navegador e são sincronizados com a nuvem
+        quando há internet.{" "}
         <Link href="/dashboard/torneios" className="underline">
           Ver torneios
         </Link>

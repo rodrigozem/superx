@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
     // Detecta conectividade e refaz navegações/prefetches/Server Actions
     // bloqueados assim que a conexão volta (hook `useOffline`).    
     useOffline: true,
+    serverActions: {
+      // A sincronização envia todos os torneios/partidas de uma vez.
+      bodySizeLimit: "8mb",
+    },
   },
   async headers() {
     return [

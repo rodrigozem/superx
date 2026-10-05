@@ -3,7 +3,8 @@ import { z } from "zod";
 import { validateScore } from "@/modules/super12/domain";
 
 import { type SuperTournamentDatabase, getDb } from "./db";
-import { matchFormatSchema } from "./schema";
+import { notifyLocalChange } from "./change-events";
+import { matchSchema, tournamentSchema } from "./sync-contract";
 import type { RepositoryResult } from "./tournament-repository";
 import {
   ACTIVE_TOURNAMENT_KEY,
@@ -13,99 +14,13 @@ import {
 } from "./types";
 
 /**
- * Backup em JSON: os torneios vivem só no IndexedDB do aparelho, então o
- * export/import é a forma de levar o torneio para outro dispositivo ou
- * recuperar após limpar os dados do navegador.
+ * Backup em JSON: cópia offline dos torneios do IndexedDB para levar a um
+ * outro aparelho ou recuperar após limpar os dados do navegador. Depois do
+ * import, o motor de sync leva os torneios novos para a nuvem.
  */
 
 export const BACKUP_KIND = "super12-tournament-backup";
 export const BACKUP_VERSION = 1;
-
-const configSchema = z.object({
-  format: z.enum(["SUPER8", "SUPER10", "SUPER12"]),
-  scheduleMode: z.enum([
-    "COMPLETO",
-    "REDUZIDO",
-    "EQUILIBRADO",
-    "PARCEIRO_DE_TODOS",
-  ]),
-  rounds: z.number().int().positive().optional(),
-  courts: z.number().int().min(1).max(6),
-  courtNames: z.array(z.string().max(20)).max(6).optional(),
-  matchFormat: matchFormatSchema,
-  rankingMode: z.enum(["VITORIAS", "PONTOS", "SALDO_GAMES", "GAMES_PRO"]),
-  points: z.object({
-    win: z.number(),
-    draw: z.number(),
-    loss: z.number(),
-  }),
-  tiebreakOrder: z.array(
-    z.enum([
-      "SALDO_GAMES",
-      "GAMES_PRO",
-      "CONFRONTO_DIRETO",
-      "APROVEITAMENTO_GAMES",
-      "MINI_CLASSIFICACAO",
-      "SORTEIO",
-    ]),
-  ),
-  finalsMode: z.enum(["NENHUMA", "FINAL_TOP4", "SEMI_TOP8"]),
-  finalsMatchFormat: matchFormatSchema.optional(),
-  seed: z.number().int().min(1).max(2_147_483_647),
-  isTest: z.boolean(),
-});
-
-const metricsSchema = z.object({
-  partnerRepeatPairs: z.number().int().min(0),
-  maxOpponentMeetings: z.number().int().min(0),
-  opponentMeetingHistogram: z.record(z.string(), z.number().int().min(0)),
-  gamesPerPlayerMin: z.number().int().min(0),
-  gamesPerPlayerMax: z.number().int().min(0),
-  byesPerPlayerMin: z.number().int().min(0),
-  byesPerPlayerMax: z.number().int().min(0),
-  relaxed: z.boolean(),
-  relaxations: z.array(z.string()),
-});
-
-const playerSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().trim().min(1).max(40),
-  nickname: z.string().optional(),
-  seed: z.number().int().optional(),
-  status: z.enum(["ATIVO", "DESISTENTE"]).optional(),
-});
-
-const tournamentSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().trim().min(1).max(80),
-  status: z.enum(["EM_ANDAMENTO", "ENCERRADO"]),
-  createdAt: z.string().min(1),
-  updatedAt: z.string().min(1),
-  config: configSchema,
-  players: z.array(playerSchema).min(4).max(12),
-  metrics: metricsSchema,
-  byesByRound: z.record(z.string(), z.array(z.string())),
-});
-
-const matchSchema = z.object({
-  id: z.string().min(1),
-  tournamentId: z.string().min(1),
-  round: z.number().int().min(1),
-  turn: z.number().int().min(1),
-  court: z.number().int().min(1).max(6),
-  teamA: z.tuple([z.string(), z.string()]),
-  teamB: z.tuple([z.string(), z.string()]),
-  status: z.enum(["AGENDADO", "EM_ANDAMENTO", "FINALIZADO", "WO", "CANCELADO"]),
-  phase: z.enum(["GRUPO", "SEMI", "FINAL", "DESEMPATE"]),
-  gamesA: z.number().int().min(0).optional(),
-  gamesB: z.number().int().min(0).optional(),
-  decisivoPara: z.enum(["A", "B"]).optional(),
-  tiebreakA: z.number().int().min(0).optional(),
-  tiebreakB: z.number().int().min(0).optional(),
-  updatedAt: z.string().optional(),
-  updatedBy: z.string().optional(),
-  notes: z.string().optional(),
-});
 
 const backupSchema = z.object({
   kind: z.literal(BACKUP_KIND),
@@ -280,6 +195,8 @@ export async function importTournamentBackup(
     const active = await db.meta.get(ACTIVE_TOURNAMENT_KEY);
     if (!active) await db.meta.put({ key: ACTIVE_TOURNAMENT_KEY, value: nextTournaments[0].id });
   });
+
+  notifyLocalChange();
 
   return {
     ok: true,

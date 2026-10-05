@@ -37,6 +37,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# arquivo de variaveis de producao para import no hPanel (contem segredos)
+deploy.env
+
 # vercel
 .vercel
 

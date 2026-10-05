@@ -27,7 +27,7 @@ export function TournamentList() {
     return (
       <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Nenhum torneio criado neste navegador.
+          Nenhum torneio encontrado.
         </p>
         <Link
           href="/dashboard/torneios/novo"

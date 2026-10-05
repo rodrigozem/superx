@@ -7,6 +7,7 @@ import {
 } from "@/modules/super12/domain";
 
 import { type SuperTournamentDatabase, getDb } from "./db";
+import { notifyLocalChange } from "./change-events";
 import { parseTournamentDraft, type TournamentDraft } from "./schema";
 import {
   ACTIVE_TOURNAMENT_KEY,
@@ -103,6 +104,8 @@ export async function createTournament(
     },
   );
 
+  notifyLocalChange();
+
   return { ok: true, data: tournament };
 }
 
@@ -134,12 +137,22 @@ export async function deleteTournament(
   id: string,
   db: SuperTournamentDatabase = getDb(),
 ): Promise<void> {
-  await db.transaction("rw", db.tournaments, db.matches, db.meta, async () => {
-    await db.matches.where("tournamentId").equals(id).delete();
-    await db.tournaments.delete(id);
-    const active = await db.meta.get(ACTIVE_TOURNAMENT_KEY);
-    if (active?.value === id) await db.meta.delete(ACTIVE_TOURNAMENT_KEY);
-  });
+  await db.transaction(
+    "rw",
+    db.tournaments,
+    db.matches,
+    db.meta,
+    db.deletedTournaments,
+    async () => {
+      await db.matches.where("tournamentId").equals(id).delete();
+      await db.tournaments.delete(id);
+      await db.deletedTournaments.put({ id, deletedAt: now() });
+      const active = await db.meta.get(ACTIVE_TOURNAMENT_KEY);
+      if (active?.value === id) await db.meta.delete(ACTIVE_TOURNAMENT_KEY);
+    },
+  );
+
+  notifyLocalChange();
 }
 
 export async function getActiveTournamentId(
@@ -188,6 +201,8 @@ export async function recordScore(
     await db.tournaments.update(match.tournamentId, { updatedAt: updated.updatedAt });
   });
 
+  notifyLocalChange();
+
   return { ok: true, data: updated };
 }
 
@@ -204,6 +219,8 @@ export async function clearScore(
     status: "AGENDADO",
     updatedAt: now(),
   });
+
+  notifyLocalChange();
 }
 
 export async function setMatchStatus(
@@ -216,5 +233,6 @@ export async function setMatchStatus(
 
   const updated: StoredMatch = { ...match, status, updatedAt: now() };
   await db.matches.put(updated);
+  notifyLocalChange();
   return { ok: true, data: updated };
 }

@@ -22,7 +22,8 @@ export default async function TournamentsPage() {
             Torneios
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Super 8, Super 10 e Super 12 — salvos apenas neste navegador.
+            Super 8, Super 10 e Super 12 — salvos no navegador e sincronizados
+            com a nuvem.
           </p>
         </div>
 
@@ -39,8 +40,9 @@ export default async function TournamentsPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <p className="max-w-md text-xs text-zinc-500 dark:text-zinc-400">
-          Os torneios ficam salvos apenas neste navegador. Exporte um backup para
-          levar para outro aparelho ou recuperar os dados.
+          Os torneios ficam salvos neste navegador e sobem para a nuvem
+          automaticamente sempre que houver internet. Exporte um backup para
+          levar os dados manualmente ou recuperá-los.
         </p>
         <BackupControls />
       </div>

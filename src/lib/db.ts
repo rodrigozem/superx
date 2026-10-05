@@ -44,6 +44,23 @@ function createDatabase() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS cloud_tournaments (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS cloud_matches (
+      id TEXT PRIMARY KEY,
+      tournament_id TEXT NOT NULL,
+      data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS cloud_tournament_deletes (
+      id TEXT PRIMARY KEY,
+      deleted_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_cloud_matches_tournament
+      ON cloud_matches (tournament_id);
   `);
 
   seedAdmin(db);
