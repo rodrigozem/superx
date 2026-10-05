@@ -13,8 +13,10 @@ import {
   FORMAT_LABEL,
   SCHEDULE_MODE_LABEL,
 } from "./labels";
+import { TvIcon } from "./icons";
 import { RoundsView } from "./rounds-view";
 import { StandingsTable } from "./standings-table";
+import { StandingsTvPanel } from "./standings-tv";
 
 type TournamentClientProps = {
   id: string;
@@ -25,6 +27,7 @@ type Tab = "RODADAS" | "CLASSIFICACAO";
 export function TournamentClient({ id }: TournamentClientProps) {
   const db = getDb();
   const [tab, setTab] = useState<Tab>("RODADAS");
+  const [tvOpen, setTvOpen] = useState(false);
 
   const tournament = useLiveQuery(() => db.tournaments.get(id), [db, id]);
   const matches = useLiveQuery(
@@ -83,6 +86,12 @@ export function TournamentClient({ id }: TournamentClientProps) {
 
   const finished = matches.filter((match) => match.status === "FINALIZADO").length;
   const showByes = Object.keys(tournament.byesByRound).length > 0;
+
+  const openTvMode = () => {
+    setTvOpen(true);
+    const request = document.documentElement.requestFullscreen?.();
+    if (request) void request.catch(() => {});
+  };
 
   return (
     <div className="space-y-6">
@@ -160,6 +169,17 @@ export function TournamentClient({ id }: TournamentClientProps) {
             {label}
           </button>
         ))}
+
+        <button
+          type="button"
+          onClick={openTvMode}
+          title="Modo TV — classificação em tela cheia"
+          aria-label="Abrir classificação em modo TV"
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          <TvIcon className="h-4 w-4" />
+          TV
+        </button>
       </div>
 
       {tab === "RODADAS" ? (
@@ -179,6 +199,18 @@ export function TournamentClient({ id }: TournamentClientProps) {
           Ver torneios
         </Link>
       </p>
+
+      {tvOpen ? (
+        <StandingsTvPanel
+          tournamentName={tournament.name}
+          standings={standings}
+          config={tournament.config}
+          showByes={showByes}
+          finished={finished}
+          total={matches.length}
+          onClose={() => setTvOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
