@@ -8,8 +8,9 @@ import { parseSyncSnapshot } from "./sync-contract";
 /**
  * Motor de sincronização com a nuvem. Roda só no navegador: envia as
  * alterações locais e aplica o snapshot do servidor sempre que (1) a página
- * carrega, (2) a conexão volta, (3) os dados locais mudam (com debounce) e
- * (4) de minuto em minuto. Falhas não perdem dado: o IndexedDB continua
+ * carrega, (2) a conexão volta, (3) os dados locais mudam (com debounce),
+ * (4) o servidor avisa via SSE que algo mudou, (5) a aba volta ao foco e
+ * (6) de minuto em minuto. Falhas não perdem dado: o IndexedDB continua
  * sendo a fonte local e a próxima tentativa reenvia tudo.
  */
 
@@ -21,8 +22,10 @@ export type SyncState =
   | { status: "error"; message: string };
 
 const CHANGE_DEBOUNCE_MS = 1_500;
+const SSE_DEBOUNCE_MS = 300;
 const RETRY_MS = 20_000;
 const POLL_MS = 60_000;
+const FOCUS_MIN_INTERVAL_MS = 10_000;
 
 let state: SyncState = { status: "idle" };
 const listeners = new Set<(state: SyncState) => void>();
@@ -49,6 +52,7 @@ export function subscribeSyncState(
 let started = false;
 let running = false;
 let rerun = false;
+let lastAttemptAt = 0;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -67,20 +71,45 @@ export function startSyncEngine(): void {
     setState({ status: "offline" });
   });
 
-  subscribeLocalChange(scheduleSync);
+  // Voltou para a aba/janela: aproveita para dar um pull rápido.
+  window.addEventListener("focus", syncIfStale);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") syncIfStale();
+  });
+
+  subscribeLocalChange(() => scheduleSync(CHANGE_DEBOUNCE_MS));
   setInterval(() => {
     void syncNow();
   }, POLL_MS);
 
+  connectEventSource();
+
   void syncNow();
 }
 
-function scheduleSync() {
+/** SSE do servidor: "changed" significa que outro aparelho sincronizou algo. */
+function connectEventSource(): void {
+  if (typeof EventSource === "undefined") return;
+
+  const source = new EventSource("/api/tournaments/stream");
+  source.addEventListener("changed", () => {
+    scheduleSync(SSE_DEBOUNCE_MS);
+  });
+  // Erros (ex.: sessão expirada) derrubam a conexão; o próprio navegador
+  // tenta reconectar quando for erro de rede, e o polling cobre o resto.
+}
+
+function syncIfStale() {
+  if (Date.now() - lastAttemptAt < FOCUS_MIN_INTERVAL_MS) return;
+  void syncNow();
+}
+
+function scheduleSync(delayMs: number) {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
     void syncNow();
-  }, CHANGE_DEBOUNCE_MS);
+  }, delayMs);
 }
 
 function scheduleRetry() {
@@ -109,6 +138,7 @@ export async function syncNow(): Promise<void> {
     retryTimer = null;
   }
 
+  lastAttemptAt = Date.now();
   running = true;
   setState({ status: "syncing" });
 

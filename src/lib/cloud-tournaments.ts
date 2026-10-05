@@ -3,6 +3,7 @@ import "server-only";
 import type { SyncPayload, SyncSnapshot } from "@/modules/super12/data/sync-contract";
 
 import { getDb } from "./db";
+import { notifyTournamentsChanged } from "./sync-bus";
 
 /**
  * Nuvem dos torneios (SQLite do servidor, compartilhada por todos os
@@ -10,9 +11,17 @@ import { getDb } from "./db";
  * regras por registro: última escrita vence (comparação de `updatedAt`) e
  * exclusão sempre vence — o tombstone impede que outro aparelho ressuscite
  * um torneio apagado.
+ *
+ * Só avisa os navegadores (SSE) quando a transação alterou alguma linha:
+ * reenvios idempotentes não disparam atualização em cascata.
  */
 export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
   const db = getDb();
+
+  let changed = false;
+  const track = (result: { changes: number | bigint }) => {
+    if (Number(result.changes) > 0) changed = true;
+  };
 
   db.exec("BEGIN");
   try {
@@ -28,9 +37,9 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
     );
 
     for (const id of payload.deletedTournamentIds) {
-      insertTombstone.run(id, deletedAt);
-      deleteTournamentRow.run(id);
-      deleteMatchRows.run(id);
+      track(insertTombstone.run(id, deletedAt));
+      track(deleteTournamentRow.run(id));
+      track(deleteMatchRows.run(id));
     }
 
     const findTombstone = db.prepare(
@@ -48,7 +57,9 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
     `);
     for (const tournament of payload.tournaments) {
       if (isDeleted(tournament.id)) continue;
-      insertTournament.run(tournament.id, JSON.stringify(tournament), tournament.updatedAt);
+      track(
+        insertTournament.run(tournament.id, JSON.stringify(tournament), tournament.updatedAt),
+      );
     }
 
     const insertMatch = db.prepare(`
@@ -60,11 +71,13 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
     `);
     for (const match of payload.matches) {
       if (isDeleted(match.tournamentId)) continue;
-      insertMatch.run(
-        match.id,
-        match.tournamentId,
-        JSON.stringify(match),
-        match.updatedAt ?? "1970-01-01T00:00:00.000Z",
+      track(
+        insertMatch.run(
+          match.id,
+          match.tournamentId,
+          JSON.stringify(match),
+          match.updatedAt ?? "1970-01-01T00:00:00.000Z",
+        ),
       );
     }
 
@@ -82,6 +95,7 @@ export function syncCloudTournaments(payload: SyncPayload): SyncSnapshot {
     };
 
     db.exec("COMMIT");
+    if (changed) notifyTournamentsChanged();
     return snapshot;
   } catch (error) {
     db.exec("ROLLBACK");
