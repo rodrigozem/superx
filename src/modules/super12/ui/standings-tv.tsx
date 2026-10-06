@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import type { StandingEntry, TournamentConfig } from "@/modules/super12/domain";
+import type {
+  PlayerStats,
+  RankingMode,
+  StandingEntry,
+  TournamentConfig,
+} from "@/modules/super12/domain";
 
 import { FORMAT_LABEL, RANKING_MODE_LABEL, formatSigned } from "./labels";
 import { CloseIcon, MaximizeIcon, MinimizeIcon } from "./icons";
@@ -45,6 +50,24 @@ const MEDALS = [
 const cell = "px-3 py-3 text-center text-xl font-medium tabular-nums sm:text-2xl";
 const head =
   "px-3 py-2 text-center text-xs font-semibold uppercase tracking-widest text-zinc-500";
+
+/** Métrica em destaque no placar, conforme o critério de ordenação do torneio. */
+const PRIMARY_METRIC: Record<
+  RankingMode,
+  { label: string; get: (stats: PlayerStats) => number; signed?: boolean }
+> = {
+  PONTOS: { label: "PTS", get: (stats) => stats.points },
+  GAMES_PRO: { label: "GP", get: (stats) => stats.gamesFor },
+  VITORIAS: { label: "V", get: (stats) => stats.wins },
+  SALDO_GAMES: { label: "SG", get: (stats) => stats.gameDiff, signed: true },
+};
+
+function formatMetric(
+  metric: (typeof PRIMARY_METRIC)[RankingMode],
+  value: number,
+): string {
+  return metric.signed ? formatSigned(value) : String(value);
+}
 
 export function StandingsTvPanel({
   tournamentName,
@@ -101,6 +124,7 @@ export function StandingsTvPanel({
   const podium = standings.slice(0, 3);
   const rest = standings.slice(3);
   const progress = total > 0 ? Math.round((finished / total) * 100) : 0;
+  const metric = PRIMARY_METRIC[config.rankingMode];
 
   return (
     <div
@@ -205,9 +229,9 @@ export function StandingsTvPanel({
                       <p
                         className={`text-3xl font-bold tabular-nums sm:text-4xl ${medal.points}`}
                       >
-                        {entry.stats.points}
+                        {formatMetric(metric, metric.get(entry.stats))}
                         <span className="ml-1 text-sm font-medium text-zinc-500">
-                          pts
+                          {metric.label}
                         </span>
                       </p>
                     </div>
@@ -250,8 +274,8 @@ export function StandingsTvPanel({
                       <th scope="col" className={head}>
                         SG
                       </th>
-                      <th scope="col" className={head}>
-                        PTS
+                      <th scope="col" className={`${head} text-zinc-300`}>
+                        {metric.label}
                       </th>
                     </tr>
                   </thead>
@@ -285,8 +309,8 @@ export function StandingsTvPanel({
                         <td className={cell}>
                           {formatSigned(entry.stats.gameDiff)}
                         </td>
-                        <td className={`${cell} font-bold`}>
-                          {entry.stats.points}
+                        <td className={`${cell} font-bold text-white`}>
+                          {formatMetric(metric, metric.get(entry.stats))}
                         </td>
                       </tr>
                     ))}
