@@ -39,11 +39,11 @@ function needsDecisive(format: MatchFormat, gamesA: number, gamesB: number) {
 }
 
 const stepperClassName =
-  "h-11 w-11 rounded-lg border border-zinc-300 text-xl font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800";
+  "h-11 w-11 rounded-lg border border-zinc-300 text-xl font-semibold text-navy-800 transition hover:bg-zinc-200 disabled:opacity-40 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700";
 const scoreClassName =
-  "h-11 w-14 rounded-lg border border-zinc-300 bg-white text-center text-lg font-semibold tabular-nums text-zinc-900 outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "h-11 w-14 rounded-lg border border-zinc-200 bg-field text-center text-lg font-semibold tabular-nums text-navy-900 outline-none focus:border-crimson-500 dark:border-navy-600 dark:bg-navy-950 dark:text-zinc-50";
 const inputClassName =
-  "w-24 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm tabular-nums text-zinc-900 outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
+  "w-24 rounded-lg border border-zinc-200 bg-field px-3 py-2 text-sm tabular-nums text-navy-900 outline-none focus:border-crimson-500 dark:border-navy-600 dark:bg-navy-950 dark:text-zinc-50";
 
 export function ScoreEditor({
   match,
@@ -98,10 +98,10 @@ export function ScoreEditor({
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-navy-800 dark:bg-navy-950">
       <div className="flex items-end justify-between gap-3">
         <div className="flex-1 text-center">
-          <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          <p className="truncate text-sm font-medium text-navy-800 dark:text-zinc-100">
             {teamAName}
           </p>
           <div className="mt-2 flex items-center justify-center gap-2">
@@ -136,7 +136,7 @@ export function ScoreEditor({
         <span className="pb-3 text-sm font-semibold text-zinc-400">x</span>
 
         <div className="flex-1 text-center">
-          <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          <p className="truncate text-sm font-medium text-navy-800 dark:text-zinc-100">
             {teamBName}
           </p>
           <div className="mt-2 flex items-center justify-center gap-2">
@@ -184,8 +184,8 @@ export function ScoreEditor({
                 }}
                 className={
                   active
-                    ? "rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    ? "rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white dark:bg-navy-800"
+                    : "rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-4 py-2 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
                 }
               >
                 {chip.gamesA}x{chip.gamesB}
@@ -252,7 +252,7 @@ export function ScoreEditor({
           type="button"
           onClick={handleSave}
           disabled={untouched || !validation.ok || saving}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+          className="rounded-lg bg-crimson-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-crimson-700 disabled:opacity-40 dark:bg-crimson-600 dark:text-white dark:hover:bg-crimson-500"
         >
           {saving ? "Salvando..." : "Salvar placar"}
         </button>
@@ -261,7 +261,7 @@ export function ScoreEditor({
             type="button"
             onClick={handleClear}
             disabled={saving}
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-4 py-2 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 disabled:opacity-40 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
           >
             Limpar
           </button>

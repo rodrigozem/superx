@@ -42,14 +42,14 @@ export function HelpTip({ label, text }: HelpTipProps) {
         aria-expanded={open}
         aria-controls={id}
         aria-label={`Ajuda: ${label}`}
-        className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-zinc-400 text-[11px] font-bold leading-none text-zinc-500 transition hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-500 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
+        className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-crimson-300 text-[11px] font-bold leading-none text-crimson-600 transition hover:bg-crimson-50 hover:text-crimson-700 dark:border-crimson-500/50 dark:text-crimson-400 dark:hover:bg-crimson-500/10 dark:hover:text-crimson-300"
       >
         ?
       </button>
       {open ? (
         <p
           id={id}
-          className="w-full basis-full rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs leading-relaxed text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+          className="w-full basis-full rounded-lg border border-navy-800 bg-navy-900 p-3 text-xs leading-relaxed text-navy-100 dark:border-navy-700 dark:bg-navy-950 dark:text-navy-200"
         >
           {text}
         </p>

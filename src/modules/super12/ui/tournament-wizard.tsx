@@ -131,10 +131,13 @@ function initialDraft(): Draft {
 }
 
 const fieldClassName =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50";
-const labelClassName = "block text-sm font-medium text-zinc-700 dark:text-zinc-300";
+  "w-full rounded-lg border border-zinc-200 bg-field px-3 py-2.5 text-sm text-navy-900 outline-none transition focus:border-crimson-500 focus:ring-2 focus:ring-crimson-500/15 dark:border-navy-600 dark:bg-navy-950 dark:text-zinc-50";
+const labelClassName =
+  "block text-sm font-semibold text-navy-800 dark:text-navy-200";
 const stepClassName =
-  "rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-900 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-100";
+  "rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-navy-800 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700";
+const activeStepClassName =
+  "rounded-lg border border-transparent bg-navy-900 px-3 py-2 text-sm font-semibold text-white transition dark:bg-navy-700";
 
 export function TournamentWizard() {
   const router = useRouter();
@@ -215,8 +218,8 @@ export function TournamentWizard() {
             <span
               className={
                 index === step
-                  ? "rounded-lg bg-zinc-900 px-3 py-1.5 font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
+                  ? "rounded-lg bg-navy-900 px-3 py-1.5 font-semibold text-white dark:bg-navy-700"
+                  : "rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-navy-700 dark:border-navy-600 dark:bg-navy-800 dark:text-navy-200"
               }
             >
               {index + 1}. {label}
@@ -260,7 +263,7 @@ export function TournamentWizard() {
                   key={format}
                   type="button"
                   onClick={() => setFormat(format)}
-                  className={draft.format === format ? stepClassName.replace("border-zinc-300", "border-zinc-900 font-semibold") : stepClassName}
+                  className={draft.format === format ? activeStepClassName : stepClassName}
                 >
                   {FORMAT_LABEL[format]}
                 </button>
@@ -282,7 +285,7 @@ export function TournamentWizard() {
                   key={mode}
                   type="button"
                   onClick={() => setDraft({ ...draft, scheduleMode: mode })}
-                  className={draft.scheduleMode === mode ? stepClassName.replace("border-zinc-300", "border-zinc-900 font-semibold") : stepClassName}
+                  className={draft.scheduleMode === mode ? activeStepClassName : stepClassName}
                 >
                   {SCHEDULE_MODE_LABEL[mode]}
                 </button>
@@ -406,7 +409,7 @@ export function TournamentWizard() {
                   key={kind}
                   type="button"
                   onClick={() => setMatchFormatKind(kind)}
-                  className={draft.matchFormat.kind === kind ? stepClassName.replace("border-zinc-300", "border-zinc-900 font-semibold") : stepClassName}
+                  className={draft.matchFormat.kind === kind ? activeStepClassName : stepClassName}
                 >
                   {describeMatchFormat(defaultOf(kind))}
                 </button>
@@ -436,7 +439,7 @@ export function TournamentWizard() {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <label className="flex items-center gap-2 text-sm text-navy-800 dark:text-navy-200">
                   <input
                     type="checkbox"
                     checked={draft.matchFormat.permitirEmpate}
@@ -449,7 +452,7 @@ export function TournamentWizard() {
                 <HelpTip label="Permitir empate" text={EMPATE_HELP} />
               </div>
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <label className="flex items-center gap-2 text-sm text-navy-800 dark:text-navy-200">
                   <input
                     type="checkbox"
                     checked={draft.matchFormat.decisivoContaGame}
@@ -489,7 +492,7 @@ export function TournamentWizard() {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <label className="flex items-center gap-2 text-sm text-navy-800 dark:text-navy-200">
                   <input
                     type="checkbox"
                     checked={draft.matchFormat.tiebreak}
@@ -500,7 +503,7 @@ export function TournamentWizard() {
                 <HelpTip label="Tie-break" text={TIEBREAK_HELP} />
               </div>
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <label className="flex items-center gap-2 text-sm text-navy-800 dark:text-navy-200">
                   <input
                     type="checkbox"
                     checked={draft.matchFormat.difMinima2}
@@ -584,7 +587,7 @@ export function TournamentWizard() {
           type="button"
           onClick={() => setStep((value) => Math.max(0, value - 1))}
           disabled={step === 0}
-          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-4 py-2 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 disabled:opacity-40 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
         >
           Voltar
         </button>
@@ -593,7 +596,7 @@ export function TournamentWizard() {
           <button
             type="button"
             onClick={() => setStep((value) => value + 1)}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded-lg bg-crimson-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-crimson-700 dark:bg-crimson-600 dark:text-white"
           >
             Avançar
           </button>
@@ -602,7 +605,7 @@ export function TournamentWizard() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded-lg bg-crimson-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-crimson-700 disabled:opacity-40 dark:bg-crimson-600 dark:text-white"
           >
             {submitting ? "Gerando tabela…" : "Gerar tabela"}
           </button>

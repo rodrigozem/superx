@@ -12,15 +12,48 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme {
+  /* Azul-marinho — cabeçalho, títulos, pílulas ativas e cabeçalhos de tabela */
+  --color-navy-50: #f3f6fb;
+  --color-navy-100: #e5ecf6;
+  --color-navy-200: #c9d5e8;
+  --color-navy-300: #9fb2d4;
+  --color-navy-400: #728cbe;
+  --color-navy-500: #4a6cab;
+  --color-navy-600: #34528a;
+  --color-navy-700: #27406e;
+  --color-navy-800: #1c3159;
+  --color-navy-900: #12244b;
+  --color-navy-950: #0c1830;
+
+  /* Carmim — ações primárias, destaques e erros de destaque */
+  --color-crimson-50: #fdf2f6;
+  --color-crimson-100: #fbe3ec;
+  --color-crimson-200: #f6c7d9;
+  --color-crimson-300: #ef9db9;
+  --color-crimson-400: #e46c97;
+  --color-crimson-500: #e0356d;
+  --color-crimson-600: #d61f5b;
+  --color-crimson-700: #b5164b;
+  --color-crimson-800: #96173f;
+  --color-crimson-900: #7e183a;
+
+  /* Superfícies */
+  --color-canvas: #f5f6f8;
+  --color-field: #f4f5f7;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #0a1122;
     --foreground: #ededed;
+    --color-canvas: #0a1122;
+    --color-field: #101c36;
   }
 }
 
 body {
-  background: var(--background);
+  background: var(--color-canvas);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

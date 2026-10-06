@@ -64,8 +64,8 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
               }}
               className={
                 active
-                  ? "rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  ? "rounded-lg bg-navy-900 px-3 py-1.5 text-sm font-semibold text-white dark:bg-navy-800"
+                  : "rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
               }
             >
               R{value}
@@ -80,7 +80,7 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
       {byes.length > 0 ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Descansam nesta rodada:{" "}
-          <span className="font-medium text-zinc-700 dark:text-zinc-200">
+          <span className="font-medium text-navy-800 dark:text-navy-200">
             {byes.map((id) => names.get(id) ?? id).join(", ")}
           </span>
         </p>
@@ -108,7 +108,7 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
       </div>
 
       {roundMatches.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-navy-600">
           Nenhum jogo nesta rodada.
         </p>
       ) : null}
@@ -147,7 +147,7 @@ function MatchCard({
   const court = courtNames?.[match.court - 1] ?? `Quadra ${match.court}`;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-navy-800 dark:bg-navy-900">
       <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
         <span>
           {court} · Turno {match.turn}
@@ -159,7 +159,7 @@ function MatchCard({
         <span
           className={
             winnerA
-              ? "text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+              ? "text-sm font-semibold text-navy-900 dark:text-zinc-50"
               : "text-sm text-zinc-600 dark:text-zinc-300"
           }
         >
@@ -171,7 +171,7 @@ function MatchCard({
         <span
           className={
             winnerB
-              ? "text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+              ? "text-sm font-semibold text-navy-900 dark:text-zinc-50"
               : "text-sm text-zinc-600 dark:text-zinc-300"
           }
         >
@@ -193,7 +193,7 @@ function MatchCard({
           <button
             type="button"
             onClick={onToggle}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="w-full rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
           >
             {played ? "Editar placar" : "Informar placar"}
           </button>

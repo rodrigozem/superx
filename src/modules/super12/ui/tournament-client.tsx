@@ -73,7 +73,7 @@ export function TournamentClient({ id }: TournamentClientProps) {
 
   if (!tournament || !matches) {
     return (
-      <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
+      <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-navy-600">
         Carregando torneio…
       </p>
     );
@@ -81,7 +81,7 @@ export function TournamentClient({ id }: TournamentClientProps) {
 
   if (matches.length === 0 && tournament.players.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
+      <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-navy-600">
         Torneio não encontrado.
       </p>
     );
@@ -98,10 +98,10 @@ export function TournamentClient({ id }: TournamentClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-navy-800 dark:bg-navy-900">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-xl font-semibold tracking-tight text-navy-900 dark:text-zinc-50">
               {tournament.name}
             </h2>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -111,7 +111,7 @@ export function TournamentClient({ id }: TournamentClientProps) {
               {tournament.config.seed}
             </p>
           </div>
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <p className="text-sm font-medium text-navy-800 dark:text-navy-200">
             {finished}/{matches.length} jogos finalizados
           </p>
         </div>
@@ -119,25 +119,25 @@ export function TournamentClient({ id }: TournamentClientProps) {
         <dl className="mt-4 grid grid-cols-2 gap-3 text-xs text-zinc-500 sm:grid-cols-4 dark:text-zinc-400">
           <div>
             <dt>Jogos por atleta</dt>
-            <dd className="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+            <dd className="mt-0.5 text-sm font-medium text-navy-800 dark:text-zinc-100">
               {tournament.metrics.gamesPerPlayerMin}–{tournament.metrics.gamesPerPlayerMax}
             </dd>
           </div>
           <div>
             <dt>Máx. repetição de confronto</dt>
-            <dd className="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+            <dd className="mt-0.5 text-sm font-medium text-navy-800 dark:text-zinc-100">
               {tournament.metrics.maxOpponentMeetings}x
             </dd>
           </div>
           <div>
             <dt>Pares que repetiram parceria</dt>
-            <dd className="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+            <dd className="mt-0.5 text-sm font-medium text-navy-800 dark:text-zinc-100">
               {tournament.metrics.partnerRepeatPairs}
             </dd>
           </div>
           <div>
             <dt>Quadras</dt>
-            <dd className="mt-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+            <dd className="mt-0.5 text-sm font-medium text-navy-800 dark:text-zinc-100">
               {tournament.config.courts}
             </dd>
           </div>
@@ -165,8 +165,8 @@ export function TournamentClient({ id }: TournamentClientProps) {
             onClick={() => setTab(value)}
             className={
               tab === value
-                ? "rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                ? "rounded-lg bg-navy-900 px-3 py-1.5 text-sm font-semibold text-white dark:bg-navy-800"
+                : "rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
             }
           >
             {label}
@@ -178,7 +178,7 @@ export function TournamentClient({ id }: TournamentClientProps) {
           onClick={openTvMode}
           title="Modo TV — classificação em tela cheia"
           aria-label="Abrir classificação em modo TV"
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
         >
           <TvIcon className="h-4 w-4" />
           TV

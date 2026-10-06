@@ -60,7 +60,7 @@ export function SyncStatus() {
     <span
       role="status"
       title={view.title}
-      className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"
+      className="inline-flex items-center gap-1.5 text-xs text-navy-200"
     >
       <span className={`h-2 w-2 rounded-full ${view.dot}`} aria-hidden />
       {view.label}

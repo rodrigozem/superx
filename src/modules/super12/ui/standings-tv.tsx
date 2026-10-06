@@ -171,7 +171,7 @@ export function StandingsTvPanel({
       aria-modal="true"
       aria-label={`Classificação de ${tournamentName} em modo TV`}
       ref={containerRef}
-      className="fixed inset-0 z-50 overflow-hidden bg-zinc-950 text-zinc-50"
+      className="fixed inset-0 z-50 overflow-hidden bg-navy-950 text-zinc-50"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(63,63,70,0.35),transparent_60%)]" />
 

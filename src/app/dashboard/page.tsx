@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
       <div className="mb-8 space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-navy-900 dark:text-zinc-50">
           Bem-vindo, {user.name}
         </h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -28,12 +28,12 @@ export default async function DashboardPage() {
         {cards.map((card) => (
           <div
             key={card.title}
-            className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-navy-800 dark:bg-navy-900"
           >
             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               {card.title}
             </p>
-            <p className="mt-2 text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
+            <p className="mt-2 text-3xl font-semibold text-navy-900 dark:text-zinc-50">
               {card.value}
             </p>
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">

@@ -10,7 +10,7 @@ type StandingsTableProps = {
 
 const cellClassName = "px-3 py-2 text-right tabular-nums";
 const headClassName =
-  "px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
+  "px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-navy-600 dark:text-navy-300";
 
 export function StandingsTable({
   standings,
@@ -18,16 +18,16 @@ export function StandingsTable({
   showByes,
 }: StandingsTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-navy-800 dark:bg-navy-900">
       <table className="w-full min-w-[46rem] text-sm">
-        <thead className="border-b border-zinc-200 dark:border-zinc-800">
+        <thead className="border-b border-navy-200 bg-navy-100 dark:border-navy-800 dark:bg-navy-800/60">
           <tr>
             <th scope="col" className={`${cellClassName} ${headClassName}`}>
               #
             </th>
             <th
               scope="col"
-              className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+              className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-navy-600 dark:text-navy-300"
             >
               Atleta
             </th>
@@ -62,19 +62,19 @@ export function StandingsTable({
             </th>
             <th
               scope="col"
-              className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+              className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-navy-600 dark:text-navy-300"
             >
               Desempate
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <tbody className="divide-y divide-navy-100 dark:divide-navy-800">
           {standings.map((entry) => (
             <tr key={entry.playerId}>
               <td className={`${cellClassName} font-semibold text-zinc-500`}>
                 {entry.position}
               </td>
-              <td className="px-3 py-2 font-medium text-zinc-900 dark:text-zinc-50">
+              <td className="px-3 py-2 font-medium text-navy-900 dark:text-zinc-50">
                 {entry.name}
               </td>
               <td className={cellClassName}>{entry.stats.played}</td>
@@ -106,7 +106,7 @@ export function StandingsTable({
         </p>
       ) : null}
 
-      <p className="border-t border-zinc-200 px-4 py-3 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+      <p className="border-t border-zinc-200 px-4 py-3 text-xs text-zinc-500 dark:border-navy-800 dark:text-zinc-400">
         Ordenado por {RANKING_MODE_LABEL[config.rankingMode]} e, em caso de
         empate, pelos critérios configurados.
       </p>

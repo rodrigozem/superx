@@ -19,7 +19,7 @@ type UserFormProps = {
 };
 
 const inputClassName =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-400";
+  "w-full rounded-lg border border-zinc-200 bg-field px-3 py-2 text-sm text-navy-900 outline-none transition focus:border-crimson-500 focus:ring-2 focus:ring-crimson-500/15 dark:border-navy-600 dark:bg-navy-950 dark:text-zinc-50 dark:focus:border-crimson-400";
 
 export function UserForm({
   action,
@@ -36,7 +36,7 @@ export function UserForm({
       <div className="space-y-2">
         <label
           htmlFor="name"
-          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          className="block text-sm font-semibold text-navy-800 dark:text-navy-200"
         >
           Nome
         </label>
@@ -58,7 +58,7 @@ export function UserForm({
       <div className="space-y-2">
         <label
           htmlFor="email"
-          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          className="block text-sm font-semibold text-navy-800 dark:text-navy-200"
         >
           E-mail
         </label>
@@ -80,7 +80,7 @@ export function UserForm({
       <div className="space-y-2">
         <label
           htmlFor="role"
-          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          className="block text-sm font-semibold text-navy-800 dark:text-navy-200"
         >
           Perfil
         </label>
@@ -103,7 +103,7 @@ export function UserForm({
       <div className="space-y-2">
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          className="block text-sm font-semibold text-navy-800 dark:text-navy-200"
         >
           Senha
         </label>
@@ -139,13 +139,13 @@ export function UserForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="rounded-lg bg-crimson-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-crimson-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-crimson-600 dark:text-white dark:hover:bg-crimson-500"
         >
           {pending ? "Salvando..." : submitLabel}
         </button>
         <Link
           href="/dashboard/users"
-          className="rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-4 py-2.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
         >
           Cancelar
         </Link>
