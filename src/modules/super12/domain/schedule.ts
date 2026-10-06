@@ -27,8 +27,63 @@ interface AssignedRound {
 
 interface AssignedSchedule {
   rounds: AssignedRound[];
+  /** Nº de pares de atletas que nunca se enfrentaram como adversários. */
+  uncovered: number;
   /** Σ (nº de confrontos)^2 — menor é melhor. */
   score: number;
+}
+
+interface OptionEval {
+  /** Combinação de jogos da rodada (duplas pareadas dois a dois). */
+  option: [Pair, Pair][];
+  /** Quantos pares de adversários do jogo ainda nunca se enfrentaram. */
+  fresh: number;
+  /** Aumento de Σ count² causado pela escolha. */
+  delta: number;
+}
+
+/** Ordem lexicográfica: primeiro cobrir todos os confrontos, depois equilibrar. */
+function isBetterSchedule(a: AssignedSchedule, b: AssignedSchedule): boolean {
+  if (a.uncovered !== b.uncovered) return a.uncovered < b.uncovered;
+  return a.score < b.score;
+}
+
+function evalOption(
+  option: [Pair, Pair][],
+  opponentCounts: Map<string, number>,
+): { fresh: number; delta: number } {
+  let fresh = 0;
+  let delta = 0;
+  for (const [teamA, teamB] of option) {
+    for (const a of teamA) {
+      for (const b of teamB) {
+        const count = opponentCounts.get(pairKey(a, b)) ?? 0;
+        if (count === 0) fresh += 1;
+        delta += (count + 1) * (count + 1) - count * count;
+      }
+    }
+  }
+  return { fresh, delta };
+}
+
+function allPlayerIndices(roundPairs: RoundPairs[]): number[] {
+  const indices = new Set<number>();
+  for (const round of roundPairs) {
+    for (const [a, b] of round.pairs) {
+      indices.add(a);
+      indices.add(b);
+    }
+  }
+  return [...indices];
+}
+
+function countUncovered(
+  opponentCounts: Map<string, number>,
+  roundPairs: RoundPairs[],
+): number {
+  const indices = allPlayerIndices(roundPairs);
+  const totalPairs = (indices.length * (indices.length - 1)) / 2;
+  return totalPairs - opponentCounts.size;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -36,11 +91,21 @@ function clamp(value: number, min: number, max: number) {
 }
 
 /**
- * Distribui as duplas em jogos (2 duplas por jogo) minimizando a repetição de
- * confrontos. Usa busca gulosa com reinícios determinísticos.
+ * Distribui as duplas em jogos (2 duplas por jogo) cobrindo primeiro todos os
+ * pares de adversários e depois minimizando a repetição de confrontos. Usa
+ * busca gulosa com reinícios determinísticos. Quando `allowSearch` está
+ * ligado e a cobertura não sai na gulosa, uma busca exaustiva com poda tenta
+ * garantir que todo par se enfrente pelo menos uma vez.
  */
-function assignGames(roundPairs: RoundPairs[], seed: number): AssignedSchedule {
-  const restarts = 96;
+function assignGames(
+  roundPairs: RoundPairs[],
+  seed: number,
+  allowSearch = true,
+): AssignedSchedule {
+  const restarts = 256;
+  const optionsPerRound = roundPairs.map((round) =>
+    perfectMatchings(round.pairs),
+  );
   let best: AssignedSchedule | null = null;
 
   for (let restart = 0; restart < restarts; restart += 1) {
@@ -49,27 +114,22 @@ function assignGames(roundPairs: RoundPairs[], seed: number): AssignedSchedule {
     const rounds: AssignedRound[] = [];
     let score = 0;
 
-    for (const round of roundPairs) {
-      const options = perfectMatchings(round.pairs);
+    roundPairs.forEach((_round, roundIndex) => {
+      const options = optionsPerRound[roundIndex];
       let bestOption: [Pair, Pair][] = options[0];
+      let bestFresh = -1;
       let bestDelta = Number.POSITIVE_INFINITY;
       let bestTie = -1;
 
       for (const option of options) {
-        let delta = 0;
-        for (const [teamA, teamB] of option) {
-          for (const a of teamA) {
-            for (const b of teamB) {
-              const count = opponentCounts.get(pairKey(a, b)) ?? 0;
-              delta += (count + 1) * (count + 1) - count * count;
-            }
-          }
-        }
+        const { fresh, delta } = evalOption(option, opponentCounts);
         const tie = rng();
-        if (
-          delta < bestDelta - 1e-9 ||
-          (Math.abs(delta - bestDelta) < 1e-9 && tie > bestTie)
-        ) {
+        const betterFresh = fresh > bestFresh;
+        const sameFresh = fresh === bestFresh;
+        const betterDelta = delta < bestDelta - 1e-9;
+        const sameDelta = Math.abs(delta - bestDelta) < 1e-9;
+        if (betterFresh || (sameFresh && (betterDelta || (sameDelta && tie > bestTie)))) {
+          bestFresh = fresh;
           bestDelta = delta;
           bestOption = option;
           bestTie = tie;
@@ -87,14 +147,149 @@ function assignGames(roundPairs: RoundPairs[], seed: number): AssignedSchedule {
 
       score += bestDelta;
       rounds.push({ games: bestOption });
-    }
+    });
 
-    if (!best || score < best.score) {
-      best = { rounds, score };
+    const candidate: AssignedSchedule = {
+      rounds,
+      uncovered: countUncovered(opponentCounts, roundPairs),
+      score,
+    };
+    if (!best || isBetterSchedule(candidate, best)) {
+      best = candidate;
+    }
+  }
+
+  if (allowSearch && best && best.uncovered > 0) {
+    const searched = searchFullCoverage(roundPairs);
+    if (searched && isBetterSchedule(searched, best)) {
+      best = searched;
     }
   }
 
   return best as AssignedSchedule;
+}
+
+/**
+ * Busca exaustiva com poda: encontra uma atribuição em que todo par de
+ * atletas se enfrenta pelo menos uma vez, quando ela existe. Determinística —
+ * as opções de cada rodada são ordenadas por pares ainda desconhecidos e
+ * depois pelo impacto no equilíbrio.
+ */
+function searchFullCoverage(
+  roundPairs: RoundPairs[],
+  nodeBudget = 50_000,
+): AssignedSchedule | null {
+  const roundCount = roundPairs.length;
+  if (roundCount === 0) return null;
+
+  const indices = allPlayerIndices(roundPairs);
+  const totalPairs = (indices.length * (indices.length - 1)) / 2;
+
+  const roundsInfo = roundPairs.map((round) => {
+    const active = new Set<number>();
+    const partner = new Map<number, number>();
+    for (const [a, b] of round.pairs) {
+      active.add(a);
+      active.add(b);
+      partner.set(a, b);
+      partner.set(b, a);
+    }
+    return {
+      options: perfectMatchings(round.pairs),
+      active,
+      partner,
+      slots: round.pairs.length * 2,
+    };
+  });
+
+  // Última rodada em que cada par pode se encontrar como adversário.
+  const lastMeetable = new Map<string, number>();
+  for (let round = 0; round < roundCount; round += 1) {
+    const info = roundsInfo[round];
+    for (const a of info.active) {
+      for (const b of info.active) {
+        if (a >= b || info.partner.get(a) === b) continue;
+        lastMeetable.set(pairKey(a, b), round);
+      }
+    }
+  }
+
+  const allKeys: string[] = [];
+  for (let i = 0; i < indices.length; i += 1) {
+    for (let j = i + 1; j < indices.length; j += 1) {
+      const key = pairKey(indices[i], indices[j]);
+      allKeys.push(key);
+      if (!lastMeetable.has(key)) return null;
+    }
+  }
+
+  const counts = new Map<string, number>();
+  const chosen: [Pair, Pair][][] = [];
+  let uncovered = totalPairs;
+  let nodes = 0;
+
+  const apply = (option: [Pair, Pair][], deltaSign: 1 | -1) => {
+    for (const [teamA, teamB] of option) {
+      for (const a of teamA) {
+        for (const b of teamB) {
+          const key = pairKey(a, b);
+          const before = counts.get(key) ?? 0;
+          const after = before + deltaSign;
+          if (before === 0) uncovered -= 1;
+          if (after === 0) uncovered += 1;
+          if (after === 0) {
+            counts.delete(key);
+          } else {
+            counts.set(key, after);
+          }
+        }
+      }
+    }
+  };
+
+  const dfs = (round: number): boolean => {
+    if (round === roundCount) return uncovered === 0;
+    if (nodes >= nodeBudget) return false;
+    nodes += 1;
+
+    let maxNew = 0;
+    for (let r = round; r < roundCount; r += 1) maxNew += roundsInfo[r].slots;
+    if (uncovered > maxNew) return false;
+
+    for (const key of allKeys) {
+      if ((counts.get(key) ?? 0) === 0 && (lastMeetable.get(key) ?? -1) < round) {
+        return false;
+      }
+    }
+
+    const info = roundsInfo[round];
+    const evals: (OptionEval & { index: number })[] = info.options.map(
+      (option, index) => ({ option, index, ...evalOption(option, counts) }),
+    );
+    evals.sort(
+      (a, b) => b.fresh - a.fresh || a.delta - b.delta || a.index - b.index,
+    );
+
+    for (const { option } of evals) {
+      apply(option, 1);
+      chosen.push(option);
+      if (dfs(round + 1)) return true;
+      chosen.pop();
+      apply(option, -1);
+    }
+
+    return false;
+  };
+
+  if (!dfs(0)) return null;
+
+  let score = 0;
+  for (const count of counts.values()) score += count * count;
+  return {
+    rounds: chosen.map((games) => ({ games })),
+    uncovered: 0,
+    score,
+  };
 }
 
 /** Escolhe, no modo reduzido, as rodadas que melhor equilibram os confrontos. */
@@ -106,16 +301,16 @@ function pickBestRounds(
   if (count >= all.length) return all;
 
   let best: RoundPairs[] | null = null;
-  let bestScore = Number.POSITIVE_INFINITY;
+  let bestAssigned: AssignedSchedule | null = null;
 
   for (let offset = 0; offset < all.length; offset += 1) {
     const candidate: RoundPairs[] = [];
     for (let i = 0; i < count; i += 1) {
       candidate.push(all[(offset + i) % all.length]);
     }
-    const assigned = assignGames(candidate, seed * 31 + offset);
-    if (assigned.score < bestScore) {
-      bestScore = assigned.score;
+    const assigned = assignGames(candidate, seed * 31 + offset, false);
+    if (!bestAssigned || isBetterSchedule(assigned, bestAssigned)) {
+      bestAssigned = assigned;
       best = candidate;
     }
   }
@@ -140,9 +335,39 @@ function super10PartnerOfAll(seed: number): RoundPairs[] {
     rng,
   );
 
+  const roundsFromChosen = (): RoundPairs[] =>
+    circles.map((pairs, round) => {
+      const restIndex = chosen[round];
+      return {
+        pairs: pairs.filter((_, index) => index !== restIndex),
+        restingPlayers: [...pairs[restIndex]],
+      };
+    });
+
+  // Nem toda escolha de descanso permite que todos os pares se enfrentem.
+  // Tenta cobertura completa em até esta quantidade de atribuições válidas.
+  const maxCoverageChecks = 24;
+  let checks = 0;
+  let aborted = false;
+  let firstValid: RoundPairs[] | null = null;
+  let coverageFound: RoundPairs[] | null = null;
+
   const dfs = (position: number): boolean => {
+    if (aborted) return false;
     if (position === order.length) {
-      return restCount.every((count) => count >= 1 && count <= 2);
+      if (!restCount.every((count) => count >= 1 && count <= 2)) return false;
+      const candidate = roundsFromChosen();
+      if (!firstValid) firstValid = candidate;
+      if (checks >= maxCoverageChecks) {
+        aborted = true;
+        return false;
+      }
+      checks += 1;
+      if (searchFullCoverage(candidate)) {
+        coverageFound = candidate;
+        return true;
+      }
+      return false;
     }
 
     // Cada rodada descansa exatamente uma dupla (2 atletas). Se sobram mais
@@ -178,27 +403,30 @@ function super10PartnerOfAll(seed: number): RoundPairs[] {
     return false;
   };
 
-  if (!dfs(0)) {
-    restCount.fill(0);
-    circles.forEach((pairs, round) => {
-      let bestIndex = 0;
-      let bestCost = Number.POSITIVE_INFINITY;
-      pairs.forEach(([a, b], index) => {
-        const cost =
-          (restCount[a] === 0 ? 0 : 10) +
-          (restCount[b] === 0 ? 0 : 10) +
-          rng() * 0.5;
-        if (cost < bestCost) {
-          bestCost = cost;
-          bestIndex = index;
-        }
-      });
-      chosen[round] = bestIndex;
-      const [a, b] = pairs[bestIndex];
-      restCount[a] += 1;
-      restCount[b] += 1;
+  dfs(0);
+
+  if (coverageFound) return coverageFound;
+  if (firstValid) return firstValid;
+
+  restCount.fill(0);
+  circles.forEach((pairs, round) => {
+    let bestIndex = 0;
+    let bestCost = Number.POSITIVE_INFINITY;
+    pairs.forEach(([a, b], index) => {
+      const cost =
+        (restCount[a] === 0 ? 0 : 10) +
+        (restCount[b] === 0 ? 0 : 10) +
+        rng() * 0.5;
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestIndex = index;
+      }
     });
-  }
+    chosen[round] = bestIndex;
+    const [a, b] = pairs[bestIndex];
+    restCount[a] += 1;
+    restCount[b] += 1;
+  });
 
   return circles.map((pairs, round) => {
     const restIndex = chosen[round];
@@ -360,6 +588,12 @@ function computeMetrics(
     if (count > maxOpponentMeetings) maxOpponentMeetings = count;
   }
 
+  const totalPairs = (players.length * (players.length - 1)) / 2;
+  const uncoveredPairs = totalPairs - opponentCounts.size;
+  if (uncoveredPairs > 0) {
+    opponentHistogram[0] = uncoveredPairs;
+  }
+
   let partnerRepeatPairs = 0;
   for (const count of partnerCounts.values()) {
     if (count > 1) partnerRepeatPairs += 1;
@@ -385,8 +619,17 @@ function buildSchedule(
   seed: number,
   relaxations: string[],
 ): Schedule {
-  const ids = players.map((player) => player.id);
-  const assigned = assignGames(roundPairs, seed);
+  // O sorteio da seed define em qual posição cada atleta entra na tabela:
+  // parceiros, adversários e descansos mudam quando o número muda.
+  const ids = shuffle(
+    players.map((player) => player.id),
+    createRng(seed ^ 0x2545f491),
+  );
+  const assigned = assignGames(
+    roundPairs,
+    seed,
+    config.scheduleMode !== "REDUZIDO",
+  );
   const matches: Match[] = [];
   const rounds: RoundPlan[] = [];
 
@@ -416,6 +659,14 @@ function buildSchedule(
   });
 
   const metrics = computeMetrics(players, rounds, matches);
+  if (
+    config.scheduleMode !== "REDUZIDO" &&
+    (metrics.opponentMeetingHistogram[0] ?? 0) > 0
+  ) {
+    relaxations.push(
+      "Nem todos os pares de atletas puderam se enfrentar como adversários. Gere a tabela novamente ou troque a seed.",
+    );
+  }
   metrics.relaxed = relaxations.length > 0;
   metrics.relaxations = relaxations;
 

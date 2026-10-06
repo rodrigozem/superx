@@ -35,6 +35,20 @@ function gamesPerPlayer(schedule: Schedule): number[] {
   return [...counts.values()];
 }
 
+/** Nº de pares de atletas que nunca se enfrentaram como adversários. */
+function uncoveredPairs(schedule: Schedule): number {
+  const met = new Set<string>();
+  for (const match of schedule.matches) {
+    for (const a of match.teamA) {
+      for (const b of match.teamB) {
+        met.add(a < b ? `${a}:${b}` : `${b}:${a}`);
+      }
+    }
+  }
+  const n = schedule.players.length;
+  return (n * (n - 1)) / 2 - met.size;
+}
+
 describe("generateSchedule — propriedades", () => {
   it("Super 8/12: invariantes para qualquer seed e nº de quadras", () => {
     fc.assert(
@@ -52,13 +66,17 @@ describe("generateSchedule — propriedades", () => {
 
           if (!noDoubleBooking(schedule)) return false;
           if (schedule.metrics.partnerRepeatPairs !== 0) return false;
+          if (uncoveredPairs(schedule) > 0) return false;
+          if ((schedule.metrics.opponentMeetingHistogram[0] ?? 0) > 0) {
+            return false;
+          }
           const counts = gamesPerPlayer(schedule);
           return counts.every((value) => value === n - 1);
         },
       ),
       { numRuns: 40, seed: 20260930 },
     );
-  });
+  }, 60_000);
 
   it("Super 10: jogos equilibrados e sem dupla marcação em qualquer modo", () => {
     fc.assert(
@@ -77,6 +95,7 @@ describe("generateSchedule — propriedades", () => {
           const counts = gamesPerPlayer(schedule);
           const diff = Math.max(...counts) - Math.min(...counts);
           if (diff > 1) return false;
+          if (uncoveredPairs(schedule) > 0) return false;
           if (!schedule.metrics.relaxed && schedule.metrics.partnerRepeatPairs !== 0) {
             return false;
           }
@@ -85,7 +104,7 @@ describe("generateSchedule — propriedades", () => {
       ),
       { numRuns: 120, seed: 20260930 },
     );
-  });
+  }, 60_000);
 
   it("é determinístico (mesma seed ⇒ mesma tabela)", () => {
     fc.assert(

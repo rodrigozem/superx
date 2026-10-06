@@ -33,6 +33,20 @@ function assertNoDoubleBooking(schedule: Schedule) {
   }
 }
 
+/** Nº de pares de atletas que nunca se enfrentaram como adversários. */
+function uncoveredPairs(schedule: Schedule): number {
+  const met = new Set<string>();
+  for (const match of schedule.matches) {
+    for (const a of match.teamA) {
+      for (const b of match.teamB) {
+        met.add(a < b ? `${a}:${b}` : `${b}:${a}`);
+      }
+    }
+  }
+  const n = schedule.players.length;
+  return (n * (n - 1)) / 2 - met.size;
+}
+
 describe("generateSchedule — Super 8 completo", () => {
   const schedule = generateSchedule(
     createDefaultConfig({ format: "SUPER8", scheduleMode: "COMPLETO", courts: 2 }),
@@ -63,6 +77,28 @@ describe("generateSchedule — Super 8 completo", () => {
     );
     expect(JSON.stringify(again)).toBe(JSON.stringify(schedule));
   });
+});
+
+describe("generateSchedule — cobertura de confrontos (Super 8)", () => {
+  it("todo par de atletas se enfrenta como adversário (seeds 0–199)", () => {
+    for (let seed = 0; seed <= 199; seed += 1) {
+      const schedule = generateSchedule(
+        createDefaultConfig({
+          format: "SUPER8",
+          scheduleMode: "COMPLETO",
+          courts: ((seed % 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6,
+        }),
+        makePlayers(8),
+        seed,
+      );
+      expect(uncoveredPairs(schedule), `seed ${seed}`).toBe(0);
+      expect(
+        schedule.metrics.opponentMeetingHistogram[0] ?? 0,
+        `seed ${seed}`,
+      ).toBe(0);
+      expect(schedule.metrics.relaxed, `seed ${seed}`).toBe(false);
+    }
+  }, 60_000);
 });
 
 describe("generateSchedule — Super 12 completo", () => {
@@ -202,8 +238,9 @@ describe("generateSchedule — Super 10 em varredura determinística", () => {
           `seed ${seed}: jogos ${counts.join(",")}`,
         ).toBeLessThanOrEqual(1);
         expect(schedule.metrics.partnerRepeatPairs, `seed ${seed}`).toBe(0);
+        expect(uncoveredPairs(schedule), `seed ${seed}`).toBe(0);
         assertNoDoubleBooking(schedule);
       }
-    });
+    }, 60_000);
   }
 });
