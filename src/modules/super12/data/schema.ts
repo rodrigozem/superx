@@ -39,6 +39,13 @@ export const createTournamentSchema = z
     ]),
     courts: z.number().int().min(1, "Use de 1 a 6 quadras.").max(6),
     courtsNames: z.array(z.string().trim().max(20)).max(6).optional(),
+    /** Quantas rodadas gerar no modo REDUZIDO (ignorado nos demais modos). */
+    rounds: z
+      .number()
+      .int("Informe um número inteiro de rodadas.")
+      .min(1, "Use no mínimo 1 rodada.")
+      .max(20, "Use no máximo 20 rodadas.")
+      .optional(),
     matchFormat: matchFormatSchema,
     rankingMode: z.enum(["VITORIAS", "PONTOS", "SALDO_GAMES", "GAMES_PRO"]),
     seed: z
@@ -100,6 +107,23 @@ export const createTournamentSchema = z
         path: ["scheduleMode"],
         message: "Super 8 e Super 12 usam Completo ou Reduzido.",
       });
+    }
+
+    if (draft.scheduleMode === "REDUZIDO" && draft.format !== "SUPER10") {
+      const maxRounds = draft.format === "SUPER8" ? 7 : 11;
+      if (draft.rounds === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["rounds"],
+          message: "Informe quantas rodadas a tabela reduzida terá.",
+        });
+      } else if (draft.rounds > maxRounds) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["rounds"],
+          message: `A tabela completa tem ${maxRounds} rodadas; use no máximo ${maxRounds}.`,
+        });
+      }
     }
   });
 

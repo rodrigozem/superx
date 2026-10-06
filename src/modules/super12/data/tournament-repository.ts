@@ -49,6 +49,7 @@ export async function createTournament(
   const config = createDefaultConfig({
     format: data.format,
     scheduleMode: data.scheduleMode,
+    rounds: data.rounds,
     courts: data.courts,
     courtNames: data.courtsNames,
     matchFormat: data.matchFormat,

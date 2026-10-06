@@ -106,6 +106,22 @@ describe("createTournament", () => {
     expect(Object.keys(result.data.byesByRound)).toHaveLength(10);
   });
 
+  it("gera Super 12 reduzido com exatamente as rodadas escolhidas", async () => {
+    const result = await createTournament(
+      draft({ scheduleMode: "REDUZIDO", rounds: 4 }),
+      db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.config.rounds).toBe(4);
+
+    const matches = await listMatches(result.data.id, db);
+    expect(matches).toHaveLength(12);
+    expect(new Set(matches.map((match) => match.round)).size).toBe(4);
+  });
+
   it("rejeita a quantidade errada de atletas", async () => {
     const result = await createTournament(
       draft({
@@ -144,6 +160,27 @@ describe("createTournament", () => {
       draft({ format: "SUPER8", scheduleMode: "EQUILIBRADO" }),
     );
     expect(wrongMode.ok).toBe(false);
+  });
+
+  it("exige e valida as rodadas no modo Reduzido", () => {
+    const missing = parseTournamentDraft(
+      draft({ scheduleMode: "REDUZIDO", rounds: undefined }),
+    );
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) {
+      expect(missing.fieldErrors.rounds).toBeTruthy();
+    }
+
+    const tooMany = parseTournamentDraft(
+      draft({ scheduleMode: "REDUZIDO", rounds: 12 }),
+    );
+    expect(tooMany.ok).toBe(false);
+    if (!tooMany.ok) {
+      expect(tooMany.fieldErrors.rounds).toContain("11");
+    }
+
+    const complete = parseTournamentDraft(draft({ scheduleMode: "COMPLETO" }));
+    expect(complete.ok).toBe(true);
   });
 
   it("mantém a mesma tabela para a mesma seed e muda com outra seed", async () => {
