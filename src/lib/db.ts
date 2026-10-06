@@ -2,9 +2,59 @@ import "server-only";
 
 import { DatabaseSync } from "node:sqlite";
 
+import { migrateTournamentConfig } from "@/modules/super12/data/config-migration";
+import type { StoredTournament } from "@/modules/super12/data/types";
+
 import { ensureDatabaseDirectory, resolveDatabasePath } from "./db-path";
 
 const globalForDb = globalThis as unknown as { __sistemaDb?: DatabaseSync };
+
+/**
+ * Atualiza torneios antigos da nuvem para a configuração atual (desempates com
+ * confronto direto/mini no fim e critério principal Vitórias). Condicional e
+ * idempotente: só mexe em quem tem a ordem de desempate legada salva, então
+ * rodar a cada inicialização é seguro. O `updated_at` novo faz os aparelhos
+ * puxarem a versão migrada no próximo sync.
+ */
+function migrateCloudTournamentConfigs(db: DatabaseSync) {
+  const rows = db
+    .prepare("SELECT id, data FROM cloud_tournaments")
+    .all() as { id: string; data: string }[];
+
+  const now = new Date().toISOString();
+  const updates: { id: string; data: string }[] = [];
+  for (const row of rows) {
+    try {
+      const result = migrateTournamentConfig(
+        JSON.parse(row.data) as StoredTournament,
+      );
+      if (result.changed) {
+        updates.push({
+          id: row.id,
+          data: JSON.stringify({ ...result.tournament, updatedAt: now }),
+        });
+      }
+    } catch {
+      // Linha ilegível não derruba a inicialização — o próprio snapshot
+      // já falharia nela durante o sync.
+    }
+  }
+  if (updates.length === 0) return;
+
+  const statement = db.prepare(
+    "UPDATE cloud_tournaments SET data = ?, updated_at = ? WHERE id = ?",
+  );
+  db.exec("BEGIN");
+  try {
+    for (const update of updates) {
+      statement.run(update.data, now, update.id);
+    }
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
 
 function seedAdmin(db: DatabaseSync) {
   const { count } = db
@@ -63,6 +113,7 @@ function createDatabase() {
       ON cloud_matches (tournament_id);
   `);
 
+  migrateCloudTournamentConfigs(db);
   seedAdmin(db);
   return db;
 }

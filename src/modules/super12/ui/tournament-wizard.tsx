@@ -81,7 +81,7 @@ const SEED_HELP =
   "Mesma seed gera sempre a mesma tabela: ela controla o sorteio de quadras, de parceiros e a ordem do desempate por sorteio. Troque o número para embaralhar de novo.";
 
 const RANKING_HELP =
-  "Como a classificação é ordenada antes dos desempates: Vitórias, Pontos (pontuação de vitória/empate/derrota do torneio), Saldo de games ou Games pró. No empate seguem, nesta ordem: saldo de games, games pró, confronto direto, aproveitamento de games, mini-classificação e sorteio.";
+  "Como a classificação é ordenada antes dos desempates: Vitórias, Pontos (pontuação de vitória/empate/derrota do torneio), Saldo de games ou Games pró. No empate seguem, nesta ordem: saldo de games, games pró, aproveitamento de games, confronto direto, mini-classificação e sorteio.";
 
 const MATCH_KINDS_HELP =
   "Soma fixa: a soma dos games fecha no total (6 → 6x0, 5x1, 3x3). Set até N: o set vai até N games e empate só vale com tie-break. Pro Set: até 8 games com diferença de 2; 8x8 decide no tie-break. Tempo: o tempo é informativo e o placar é livre. Livre: qualquer placar é aceito.";

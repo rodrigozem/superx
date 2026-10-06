@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 
+import { migrateTournamentConfig } from "./config-migration";
 import type {
   DeletedTournament,
   StoredMatch,
@@ -26,6 +27,18 @@ export class SuperTournamentDatabase extends Dexie {
     this.version(2).stores({
       deletedTournaments: "id, deletedAt",
     });
+    this.version(3).upgrade((tx) =>
+      tx
+        .table("tournaments")
+        .toCollection()
+        .modify((tournament: StoredTournament) => {
+          const result = migrateTournamentConfig(tournament);
+          if (!result.changed) return;
+          tournament.config = result.tournament.config;
+          // Novo updatedAt faz o sync empurrar a configuração migrada.
+          tournament.updatedAt = new Date().toISOString();
+        }),
+    );
   }
 }
 

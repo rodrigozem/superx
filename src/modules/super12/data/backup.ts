@@ -3,6 +3,7 @@ import { z } from "zod";
 import { validateScore } from "@/modules/super12/domain";
 
 import { type SuperTournamentDatabase, getDb } from "./db";
+import { migrateTournamentConfig } from "./config-migration";
 import { notifyLocalChange } from "./change-events";
 import { matchSchema, tournamentSchema } from "./sync-contract";
 import type { RepositoryResult } from "./tournament-repository";
@@ -114,7 +115,7 @@ export async function importTournamentBackup(
       if (mapped.length > 0) byesByRound[round] = mapped;
     }
 
-    nextTournaments.push({
+    const stored: StoredTournament = {
       id: tournamentId,
       name: tournament.name,
       status: tournament.status,
@@ -124,7 +125,9 @@ export async function importTournamentBackup(
       players,
       metrics: tournament.metrics,
       byesByRound,
-    });
+    };
+    // Backup antigo volta com a configuração legada: aplica a migração.
+    nextTournaments.push(migrateTournamentConfig(stored).tournament);
 
     const own = matches.filter((match) => match.tournamentId === tournament.id);
     const usedIds = new Set<string>();

@@ -128,6 +128,20 @@ export interface Schedule {
 export const DEFAULT_TIEBREAK_ORDER: TiebreakCriterion[] = [
   "SALDO_GAMES",
   "GAMES_PRO",
+  "APROVEITAMENTO_GAMES",
+  "CONFRONTO_DIRETO",
+  "MINI_CLASSIFICACAO",
+  "SORTEIO",
+];
+
+/**
+ * Ordem usada até2026 nos torneios criados: o confronto direto vinha logo
+ * após o saldo. Os torneios com esta ordem salva são atualizados para a
+ * ordem atual pela migração de configuração (ver `config-migration.ts`).
+ */
+export const LEGACY_TIEBREAK_ORDER: TiebreakCriterion[] = [
+  "SALDO_GAMES",
+  "GAMES_PRO",
   "CONFRONTO_DIRETO",
   "APROVEITAMENTO_GAMES",
   "MINI_CLASSIFICACAO",
