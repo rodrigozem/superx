@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { computeStandings } from "@/modules/super12/domain";
 
@@ -28,6 +28,9 @@ export function TournamentClient({ id }: TournamentClientProps) {
   const db = getDb();
   const [tab, setTab] = useState<Tab>("RODADAS");
   const [tvOpen, setTvOpen] = useState(false);
+  // Referência estável: um onClose novo a cada re-render faria o painel da TV
+  // rodar o cleanup do efeito e derrubar a tela cheia a cada resultado salvo.
+  const closeTv = useCallback(() => setTvOpen(false), []);
 
   const tournament = useLiveQuery(() => db.tournaments.get(id), [db, id]);
   const matches = useLiveQuery(
@@ -208,7 +211,7 @@ export function TournamentClient({ id }: TournamentClientProps) {
           showByes={showByes}
           finished={finished}
           total={matches.length}
-          onClose={() => setTvOpen(false)}
+          onClose={closeTv}
         />
       ) : null}
     </div>

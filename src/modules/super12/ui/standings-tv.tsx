@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type {
   PlayerStats,
@@ -87,10 +87,39 @@ export function StandingsTvPanel({
 }: StandingsTvPanelProps) {
   const [clock, setClock] = useState(() => new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 10_000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Modo TV nunca mostra barra de rolagem: o conteúdo é medido e reduzido
+  // (transform: scale) para caber inteiro na viewport.
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+    const fit = () => {
+      const ratio = Math.min(
+        1,
+        container.clientWidth / content.scrollWidth,
+        container.clientHeight / content.scrollHeight,
+      );
+      setScale(ratio > 0 && Number.isFinite(ratio) ? ratio : 1);
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(container);
+    observer.observe(content);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -99,6 +128,9 @@ export function StandingsTvPanel({
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  // Montagem única: o cleanup só roda ao fechar o modo TV (daí sair da tela
+  // cheia). `onClose` vive numa ref para o efeito não re-executar quando o
+  // pai re-renderiza (ex.: ao informar um resultado).
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -107,7 +139,7 @@ export function StandingsTvPanel({
       if (event.key !== "Escape") return;
       // Primeiro Esc só sai do fullscreen do navegador; o segundo fecha.
       if (document.fullscreenElement) return;
-      onClose();
+      onCloseRef.current();
     };
     window.addEventListener("keydown", onKeyDown);
 
@@ -118,7 +150,7 @@ export function StandingsTvPanel({
         void document.exitFullscreen().catch(() => {});
       }
     };
-  }, [onClose]);
+  }, []);
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) {
@@ -138,11 +170,16 @@ export function StandingsTvPanel({
       role="dialog"
       aria-modal="true"
       aria-label={`Classificação de ${tournamentName} em modo TV`}
-      className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950 text-zinc-50"
+      ref={containerRef}
+      className="fixed inset-0 z-50 overflow-hidden bg-zinc-950 text-zinc-50"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(63,63,70,0.35),transparent_60%)]" />
 
-      <div className="relative mx-auto w-full max-w-6xl px-6 py-8 sm:px-10 sm:py-10">
+      <div
+        ref={contentRef}
+        className="relative mx-auto w-full max-w-6xl px-6 py-8 sm:px-10 sm:py-10"
+        style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+      >
         <header className="flex flex-wrap items-start justify-between gap-6">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-zinc-500">
@@ -261,7 +298,7 @@ export function StandingsTvPanel({
             </section>
 
             {rest.length > 0 ? (
-              <section className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03]">
+              <section className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full min-w-[40rem]">
                   <thead className="border-b border-white/10">
                     <tr>
