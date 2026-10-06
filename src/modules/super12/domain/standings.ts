@@ -242,6 +242,62 @@ function headToHead(
   return result;
 }
 
+interface GroupH2HRecord {
+  meetings: number;
+  wins: number;
+  gameDiff: number;
+  gamesFor: number;
+}
+
+/**
+ * Confronto direto agregado de um grupo de empatados: para cada atleta, soma
+ * os jogos em que enfrentou outro membro do grupo como adversário (parceiro
+ * não conta). Não avalia se o grupo está completo — quem chama decide se um
+ * membro sem nenhum confronto invalida o critério.
+ */
+function groupHeadToHead(
+  group: string[],
+  matches: Match[],
+  config: TournamentConfig,
+  phase: Phase,
+): Map<string, GroupH2HRecord> {
+  const members = new Set(group);
+  const table = new Map<string, GroupH2HRecord>(
+    group.map((id) => [
+      id,
+      { meetings: 0, wins: 0, gameDiff: 0, gamesFor: 0 },
+    ]),
+  );
+
+  for (const match of matches) {
+    if (match.phase !== phase || !isCountable(match)) continue;
+    if (!match.teamA.some((id) => members.has(id))) continue;
+    if (!match.teamB.some((id) => members.has(id))) continue;
+
+    const score = outcomeOf(match, config);
+    if (!score) continue;
+
+    for (const id of match.teamA) {
+      const row = table.get(id);
+      if (!row) continue;
+      row.meetings += 1;
+      row.gamesFor += score.gamesA;
+      row.gameDiff += score.gamesA - score.gamesB;
+      if (score.outcome === "A") row.wins += 1;
+    }
+    for (const id of match.teamB) {
+      const row = table.get(id);
+      if (!row) continue;
+      row.meetings += 1;
+      row.gamesFor += score.gamesB;
+      row.gameDiff += score.gamesB - score.gamesA;
+      if (score.outcome === "B") row.wins += 1;
+    }
+  }
+
+  return table;
+}
+
 function miniStats(
   group: string[],
   matches: Match[],
@@ -349,16 +405,19 @@ export function computeStandings(
       let subgroups: string[][] | null = null;
 
       if (criterion === "CONFRONTO_DIRETO") {
-        if (group.ids.length === 2) {
-          const [a, b] = group.ids;
-          const h2h = headToHead(a, b, matches, config, phase);
-          if (h2h.matches > 0) {
-            if (h2h.winsA !== h2h.winsB) {
-              subgroups = h2h.winsA > h2h.winsB ? [[a], [b]] : [[b], [a]];
-            } else if (h2h.gamesA !== h2h.gamesB) {
-              subgroups = h2h.gamesA > h2h.gamesB ? [[a], [b]] : [[b], [a]];
-            }
-          }
+        // Serve de 2 a N empatados: soma, para cada um, os jogos contra os
+        // demais do grupo. Se alguém nunca enfrentou ninguém do grupo, o
+        // critério não separa ninguém (mesma proteção do par clássico).
+        const h2h = groupHeadToHead(group.ids, matches, config, phase);
+        const allMet = group.ids.every((id) => h2h.get(id)!.meetings > 0);
+        if (allMet) {
+          subgroups = sortAndGroup(group.ids, (a, b) => {
+            const ra = h2h.get(a)!;
+            const rb = h2h.get(b)!;
+            if (rb.wins !== ra.wins) return rb.wins - ra.wins;
+            if (rb.gameDiff !== ra.gameDiff) return rb.gameDiff - ra.gameDiff;
+            return rb.gamesFor - ra.gamesFor;
+          });
         }
       } else if (criterion === "MINI_CLASSIFICACAO") {
         const mini = miniStats(group.ids, matches, config, phase);
@@ -474,11 +533,41 @@ function criterionDetail(
   const below = stats.get(belowId)!;
 
   if (criterion === "CONFRONTO_DIRETO") {
-    const h2h = headToHead(aboveId, belowId, matches, config, phase);
-    if (h2h.winsA !== h2h.winsB) {
-      return `Confronto direto: ${h2h.winsA} vitória(s) x ${h2h.winsB}`;
+    // Com 3+ empatados, a decisão veio do agregado contra o grupo; com 2,
+    // do confronto par a par.
+    const tieContext = [...stats.values()]
+      .filter(
+        (entry) =>
+          primaryValue(config.rankingMode, entry) ===
+          primaryValue(config.rankingMode, above),
+      )
+      .map((entry) => entry.playerId);
+
+    if (tieContext.length > 2) {
+      const table = groupHeadToHead(tieContext, matches, config, phase);
+      const rowAbove = table.get(aboveId);
+      const rowBelow = table.get(belowId);
+      if (rowAbove && rowBelow) {
+        if (rowAbove.wins !== rowBelow.wins) {
+          return `Confronto direto: ${rowAbove.wins} vitória(s) x ${rowBelow.wins} contra os empatados`;
+        }
+        if (rowAbove.gameDiff !== rowBelow.gameDiff) {
+          return `Confronto direto: saldo ${rowAbove.gameDiff} x ${rowBelow.gameDiff} nos confrontos`;
+        }
+        if (rowAbove.gamesFor !== rowBelow.gamesFor) {
+          return `Confronto direto: ${rowAbove.gamesFor} x ${rowBelow.gamesFor} games nos confrontos`;
+        }
+      }
     }
-    return `Confronto direto: ${h2h.gamesA} x ${h2h.gamesB} em games`;
+
+    const h2h = headToHead(aboveId, belowId, matches, config, phase);
+    if (h2h.matches > 0) {
+      if (h2h.winsA !== h2h.winsB) {
+        return `Confronto direto: ${h2h.winsA} vitória(s) x ${h2h.winsB}`;
+      }
+      return `Confronto direto: ${h2h.gamesA} x ${h2h.gamesB} em games`;
+    }
+    return `Confronto direto: sem jogos diretos`;
   }
 
   if (criterion === "MINI_CLASSIFICACAO") {

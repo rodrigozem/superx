@@ -201,4 +201,62 @@ describe("computeStandings — desempates específicos", () => {
       ),
     ).toBe(true);
   });
+
+  it("CONFRONTO_DIRETO desempata3 atletas com vitórias, saldo e games iguais", () => {
+    const ids = ["A", "B", "C", "p1", "p2", "p3", "p4", "x1", "x2", "x3", "x4", "x5", "x6"];
+    const group: Player[] = ids.map((id) => ({ id, name: id }));
+    const matches: Match[] = [
+      match("m1", ["A", "p1"], ["B", "x1"], 6, 0), // A derrota B
+      match("m2", ["A", "p2"], ["C", "x2"], 6, 6), // A empata com C
+      match("m3", ["B", "p3"], ["x3", "x4"], 12, 0), // B compensa o saldo fora
+      match("m4", ["C", "p4"], ["x5", "x6"], 6, 0), // C compensa o saldo fora
+    ];
+    const config = createDefaultConfig({ matchFormat: { kind: "LIVRE" } });
+
+    const standings = computeStandings(group, matches, config);
+
+    // A, B e C ficam empatados em tudo (1 vitória, saldo +6, 12 games pró);
+    // p3 entra primeiro pelo saldo (+12) e o confronto direto resolve o trio:
+    // A venceu o grupo, C (saldo 0) fica à frente de B (saldo -6).
+    expect(standings[0].playerId).toBe("p3");
+    expect(standings.slice(1, 4).map((entry) => entry.playerId)).toEqual([
+      "A",
+      "C",
+      "B",
+    ]);
+    expect(standings[2].tiebreak?.criterion).toBe("CONFRONTO_DIRETO");
+    expect(standings[2].tiebreak?.detail).toContain("vitória");
+    expect(standings[3].tiebreak?.criterion).toBe("CONFRONTO_DIRETO");
+  });
+
+  it("CONFRONTO_DIRETO não separa quando um empatado nunca jogou contra o grupo", () => {
+    const ids = [
+      "A", "B", "C",
+      "p1", "p2", "p3", "p4", "p5", "p6",
+      "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11",
+    ];
+    const group: Player[] = ids.map((id) => ({ id, name: id }));
+    const matches: Match[] = [
+      match("m1", ["A", "p1"], ["B", "x1"], 6, 0), // A e B se enfrentam
+      match("m2", ["A", "p2"], ["x2", "x3"], 6, 0),
+      match("m3", ["B", "p3"], ["x4", "x5"], 6, 0),
+      match("m4", ["B", "p4"], ["x6", "x7"], 6, 0),
+      match("m5", ["C", "p5"], ["x8", "x9"], 6, 0), // C só joga fora do trio
+      match("m6", ["C", "p6"], ["x10", "x11"], 6, 0),
+    ];
+    const config = createDefaultConfig({
+      tiebreakOrder: ["CONFRONTO_DIRETO", "SORTEIO"],
+    });
+
+    const standings = computeStandings(group, matches, config);
+
+    // C nunca enfrentou A nem B: o critério não decide nada e o sorteio
+    // (próximo da ordem) resolve os três.
+    expect(
+      standings.every((entry) => entry.tiebreak?.criterion !== "CONFRONTO_DIRETO"),
+    ).toBe(true);
+    expect(
+      standings.some((entry) => entry.tiebreak?.criterion === "SORTEIO"),
+    ).toBe(true);
+  });
 });
