@@ -31,21 +31,28 @@ type StandingsTvPanelProps = {
 
 const MEDALS = [
   {
-    card: "border-amber-400/40 bg-gradient-to-b from-amber-400/15 to-transparent",
+    accent: "bg-amber-400",
+    card: "bg-gradient-to-b from-amber-400/15 to-transparent",
     badge: "bg-amber-400 text-zinc-950",
     points: "text-amber-300",
   },
   {
-    card: "border-zinc-300/30 bg-gradient-to-b from-zinc-300/10 to-transparent",
+    accent: "bg-zinc-200",
+    card: "bg-gradient-to-b from-zinc-300/10 to-transparent",
     badge: "bg-zinc-200 text-zinc-950",
     points: "text-zinc-200",
   },
   {
-    card: "border-orange-400/40 bg-gradient-to-b from-orange-400/10 to-transparent",
+    accent: "bg-orange-500",
+    card: "bg-gradient-to-b from-orange-400/10 to-transparent",
     badge: "bg-orange-500 text-white",
     points: "text-orange-300",
   },
 ];
+
+/** Alturas dos degraus do pódio (2º à esquerda, 1º ao centro, 3º à direita). */
+const PODIUM_HEIGHT = ["sm:h-72", "sm:h-60", "sm:h-52"];
+const PODIUM_ORDER = ["sm:order-2", "sm:order-1", "sm:order-3"];
 
 const cell = "px-3 py-3 text-center text-xl font-medium tabular-nums sm:text-2xl";
 const head =
@@ -202,25 +209,38 @@ export function StandingsTvPanel({
           </p>
         ) : (
           <>
-            <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <section className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-center sm:gap-4">
               {podium.map((entry, index) => {
                 const medal = MEDALS[index];
+                const nameSize =
+                  index === 0 ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl";
                 return (
                   <div
                     key={entry.playerId}
-                    className={`rounded-2xl border p-5 ${medal.card} ${index === 0 ? "sm:order-2" : index === 1 ? "sm:order-1" : "sm:order-3"}`}
+                    className={`relative flex flex-1 flex-col justify-end overflow-hidden rounded-2xl border border-white/10 p-5 ${medal.card} ${PODIUM_HEIGHT[index]} ${PODIUM_ORDER[index]}`}
                   >
-                    <div className="flex items-center gap-4">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -top-6 right-3 select-none text-[6rem] font-black leading-none text-white/5 sm:text-[8rem]"
+                    >
+                      {entry.position}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-x-0 top-0 h-1 ${medal.accent}`}
+                    />
+
+                    <div className="relative flex items-center gap-4">
                       <span
                         className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg font-bold ${medal.badge}`}
                       >
                         {entry.position}
                       </span>
-                      <p className="min-w-0 flex-1 truncate text-2xl font-semibold sm:text-3xl">
+                      <p className={`min-w-0 flex-1 truncate font-semibold ${nameSize}`}>
                         {entry.name}
                       </p>
                     </div>
-                    <div className="mt-4 flex items-end justify-between gap-3">
+                    <div className="relative mt-4 flex items-end justify-between gap-3">
                       <p className="text-sm text-zinc-400 sm:text-base">
                         {entry.stats.wins}V {entry.stats.draws}E{" "}
                         {entry.stats.losses}D · SG{" "}
