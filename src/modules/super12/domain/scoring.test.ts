@@ -92,6 +92,42 @@ describe("SOMA_FIXA (melhor de 6)", () => {
   });
 });
 
+describe("SOMA_FIXA de 4 games", () => {
+  const somaFixa4: MatchFormat = {
+    kind: "SOMA_FIXA",
+    total: 4,
+    permitirEmpate: true,
+    decisivoContaGame: true,
+  };
+
+  it("aceita exatamente 4x0, 3x1 e 2x2 (e inversos)", () => {
+    for (const [a, b] of [
+      [4, 0],
+      [3, 1],
+      [2, 2],
+      [1, 3],
+      [0, 4],
+    ]) {
+      expectOk({ gamesA: a, gamesB: b }, somaFixa4);
+    }
+    expectError({ gamesA: 4, gamesB: 1 }, somaFixa4);
+    expectError({ gamesA: 3, gamesB: 0 }, somaFixa4);
+  });
+
+  it("marca 2x2 como empate e gera os chips válidos", () => {
+    const draw = expectOk({ gamesA: 2, gamesB: 2 }, somaFixa4);
+    if (draw.ok) expect(draw.outcome).toBe("DRAW");
+
+    expect(validScoreChips(somaFixa4)).toEqual([
+      { gamesA: 4, gamesB: 0 },
+      { gamesA: 3, gamesB: 1 },
+      { gamesA: 2, gamesB: 2 },
+      { gamesA: 1, gamesB: 3 },
+      { gamesA: 0, gamesB: 4 },
+    ]);
+  });
+});
+
 describe("SET_ATE_N", () => {
   it("aceita 6x4 e 7x5, rejeita 6x5 com diferença mínima 2", () => {
     expectOk({ gamesA: 6, gamesB: 4 }, set6comTiebreak);

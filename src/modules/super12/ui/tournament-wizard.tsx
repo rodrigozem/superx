@@ -36,15 +36,34 @@ type Draft = {
 const FORMATS: Format[] = ["SUPER8", "SUPER10", "SUPER12"];
 const RANKING_MODES: RankingMode[] = ["VITORIAS", "PONTOS", "SALDO_GAMES", "GAMES_PRO"];
 
-const MATCH_FORMAT_KINDS = [
-  "SOMA_FIXA",
-  "SET_ATE_N",
-  "PRO_SET",
-  "TEMPO",
-  "LIVRE",
-] as const;
+/** Presets exibidos nas opções de formato do jogo. */
+const MATCH_FORMAT_PRESETS: MatchFormat[] = [
+  {
+    kind: "SOMA_FIXA",
+    total: 4,
+    permitirEmpate: true,
+    decisivoContaGame: true,
+  },
+  {
+    kind: "SOMA_FIXA",
+    total: 6,
+    permitirEmpate: true,
+    decisivoContaGame: true,
+  },
+  { kind: "SET_ATE_N", games: 6, tiebreak: true, difMinima2: false },
+  { kind: "PRO_SET", games: 8 },
+  { kind: "TEMPO", minutos: 20 },
+  { kind: "LIVRE" },
+];
 
-type MatchFormatKind = (typeof MATCH_FORMAT_KINDS)[number];
+/** Um preset fica ativo quando o formato escolhido corresponde a ele. */
+function isPresetActive(current: MatchFormat, preset: MatchFormat): boolean {
+  if (current.kind !== preset.kind) return false;
+  if (current.kind === "SOMA_FIXA" && preset.kind === "SOMA_FIXA") {
+    return current.total === preset.total;
+  }
+  return true;
+}
 
 function modesFor(format: Format): ScheduleMode[] {
   return format === "SUPER10" ? ["EQUILIBRADO", "PARCEIRO_DE_TODOS"] : ["COMPLETO", "REDUZIDO"];
@@ -84,10 +103,10 @@ const RANKING_HELP =
   "Como a classificação é ordenada antes dos desempates: Vitórias, Pontos (pontuação de vitória/empate/derrota do torneio), Saldo de games ou Games pró. No empate seguem, nesta ordem: saldo de games, games pró, aproveitamento de games, confronto direto, mini-classificação e sorteio.";
 
 const MATCH_KINDS_HELP =
-  "Soma fixa: a soma dos games fecha no total (6 → 6x0, 5x1, 3x3). Set até N: o set vai até N games e empate só vale com tie-break. Pro Set: até 8 games com diferença de 2; 8x8 decide no tie-break. Tempo: o tempo é informativo e o placar é livre. Livre: qualquer placar é aceito.";
+  "Soma fixa: a soma dos games fecha no total (4 → 4x0, 3x1, 2x2; 6 → 6x0, 5x1, 4x2, 3x3). Set até N: o set vai até N games e empate só vale com tie-break. Pro Set: até 8 games com diferença de 2; 8x8 decide no tie-break. Tempo: o tempo é informativo e o placar é livre. Livre: qualquer placar é aceito.";
 
 const SOMA_TOTAL_HELP =
-  "Total obrigatório da soma dos games em cada jogo. Com 6, os placares válidos são 6x0, 5x1, 4x2 e 3x3.";
+  "Total obrigatório da soma dos games em cada jogo. Com 4, os placares válidos são 4x0, 3x1 e 2x2; com 6, são 6x0, 5x1, 4x2 e 3x3.";
 
 const EMPATE_HELP =
   "Marcado, um placar empatado (ex.: 3x3) é válido. Desmarcado, ao registrar o jogo será obrigatório informar quem venceu o ponto decisivo.";
@@ -158,20 +177,8 @@ export function TournamentWizard() {
     }));
   }
 
-  function setMatchFormatKind(kind: MatchFormatKind) {
-    setDraft((current) => ({
-      ...current,
-      matchFormat:
-        kind === "SOMA_FIXA"
-          ? { kind, total: 6, permitirEmpate: true, decisivoContaGame: true }
-          : kind === "SET_ATE_N"
-            ? { kind, games: 6, tiebreak: true, difMinima2: false }
-            : kind === "PRO_SET"
-              ? { kind, games: 8 }
-              : kind === "TEMPO"
-                ? { kind, minutos: 20 }
-                : { kind: "LIVRE" },
-    }));
+  function applyMatchFormatPreset(preset: MatchFormat) {
+    setDraft((current) => ({ ...current, matchFormat: { ...preset } }));
   }
 
   function updateMatchFormat(patch: Partial<MatchFormat>) {
@@ -404,14 +411,18 @@ export function TournamentWizard() {
               <HelpTip label="Formato do jogo" text={MATCH_KINDS_HELP} />
             </div>
             <div className="flex flex-wrap gap-2">
-              {MATCH_FORMAT_KINDS.map((kind) => (
+              {MATCH_FORMAT_PRESETS.map((preset) => (
                 <button
-                  key={kind}
+                  key={describeMatchFormat(preset)}
                   type="button"
-                  onClick={() => setMatchFormatKind(kind)}
-                  className={draft.matchFormat.kind === kind ? activeStepClassName : stepClassName}
+                  onClick={() => applyMatchFormatPreset(preset)}
+                  className={
+                    isPresetActive(draft.matchFormat, preset)
+                      ? activeStepClassName
+                      : stepClassName
+                  }
                 >
-                  {describeMatchFormat(defaultOf(kind))}
+                  {describeMatchFormat(preset)}
                 </button>
               ))}
             </div>
@@ -618,19 +629,4 @@ export function TournamentWizard() {
 function resize(players: string[], size: number): string[] {
   if (players.length === size) return players;
   return Array.from({ length: size }, (_, index) => players[index] ?? "");
-}
-
-function defaultOf(kind: MatchFormatKind): MatchFormat {
-  switch (kind) {
-    case "SOMA_FIXA":
-      return { kind, total: 6, permitirEmpate: true, decisivoContaGame: true };
-    case "SET_ATE_N":
-      return { kind, games: 6, tiebreak: true, difMinima2: false };
-    case "PRO_SET":
-      return { kind, games: 8 };
-    case "TEMPO":
-      return { kind, minutos: 20 };
-    case "LIVRE":
-      return { kind };
-  }
 }
