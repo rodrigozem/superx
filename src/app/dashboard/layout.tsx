@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { logout } from "@/app/actions/auth";
 import { requireUser } from "@/lib/dal";
 import { SyncStatus } from "@/modules/super12/ui/sync-status";
@@ -15,9 +17,14 @@ export default async function DashboardLayout({
         <div className="mx-auto w-full max-w-5xl px-6">
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
             <div>
-              <p className="text-sm font-bold tracking-wide text-white">
-                Sistema de Torneios
-              </p>
+              <Image
+                src="/logo.png"
+                alt="Super X"
+                width={800}
+                height={366}
+                priority
+                className="h-12 w-auto"
+              />
               <p className="text-xs text-navy-300">
                 {user.name} · {user.email}
               </p>

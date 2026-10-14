@@ -39,11 +39,11 @@ export function SyncStatus() {
           title: "Enviando e recebendo os torneios da nuvem.",
         }
       : state.status === "synced"
-        ? {
-            dot: "bg-emerald-500",
-            label: "Sincronizado",
-            title: `Última sincronização: ${new Date(state.at).toLocaleTimeString("pt-BR")}`,
-          }
+          ? {
+              dot: "bg-emerald-500",
+              label: "",
+              title: `Última sincronização: ${new Date(state.at).toLocaleTimeString("pt-BR")}`,
+            }
         : state.status === "error"
           ? {
               dot: "bg-red-500",
