@@ -13,7 +13,7 @@ export function NavTabs({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-1">
+    <nav aria-label="Navegação principal" className="flex items-center gap-0.5 self-stretch">
       {TABS.filter((tab) => !tab.adminOnly || isAdmin).map((tab) => {
         const active =
           tab.href === "/dashboard"
@@ -26,8 +26,8 @@ export function NavTabs({ isAdmin }: { isAdmin: boolean }) {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "border-b-2 border-crimson-500 px-3 py-2 text-sm font-semibold text-white"
-                : "border-b-2 border-transparent px-3 py-2 text-sm font-medium text-navy-300 transition hover:border-white/40 hover:text-white"
+                ? "relative flex items-center px-3.5 text-[13px] font-semibold uppercase tracking-[0.05em] text-white after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-0.5 after:rounded-full after:bg-crimson-500"
+                : "relative flex items-center px-3.5 text-[13px] font-medium uppercase tracking-[0.05em] text-navy-300 transition hover:text-white"
             }
           >
             {tab.label}

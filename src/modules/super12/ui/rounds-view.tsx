@@ -142,9 +142,21 @@ function MatchCard({
   const played = match.gamesA !== undefined && match.gamesB !== undefined;
   const gamesA = match.gamesA ?? 0;
   const gamesB = match.gamesB ?? 0;
-  const winnerA = played && gamesA > gamesB;
-  const winnerB = played && gamesB > gamesA;
   const court = courtNames?.[match.court - 1] ?? `Quadra ${match.court}`;
+
+  const hasTiebreak =
+    match.tiebreakA !== undefined &&
+    match.tiebreakB !== undefined &&
+    match.tiebreakA > 0 &&
+    match.tiebreakB > 0;
+  const hasDecisivo =
+    matchFormat.kind === "SOMA_FIXA" &&
+    match.decisivoPara !== undefined &&
+    gamesA === gamesB &&
+    !matchFormat.permitirEmpate;
+
+  const winnerA = played && (gamesA > gamesB || (hasDecisivo && match.decisivoPara === "A"));
+  const winnerB = played && (gamesB > gamesA || (hasDecisivo && match.decisivoPara === "B"));
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-navy-800 dark:bg-navy-900">
@@ -178,6 +190,24 @@ function MatchCard({
           {teamB}
         </span>
       </div>
+
+      {played && hasTiebreak ? (
+        <p className="mt-1.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
+          Tie-break:{" "}
+          <span className="font-semibold tabular-nums text-navy-700 dark:text-zinc-200">
+            {match.tiebreakA}x{match.tiebreakB}
+          </span>
+        </p>
+      ) : null}
+
+      {played && hasDecisivo ? (
+        <p className="mt-1.5 text-center text-xs text-zinc-500 dark:text-zinc-400">
+          Ponto decisivo:{" "}
+          <span className="font-semibold text-navy-700 dark:text-zinc-200">
+            {match.decisivoPara === "A" ? teamA : teamB}
+          </span>
+        </p>
+      ) : null}
 
       <div className="mt-3">
         {editing ? (
