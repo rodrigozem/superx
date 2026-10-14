@@ -143,6 +143,74 @@ describe("SET_ATE_N", () => {
     );
     if (result.ok) expect(result.outcome).toBe("A");
   });
+
+  // O preset do wizard é "Set até 6 games com tie-break" com difMinima2=false.
+  // Como o tie-break só faz sentido se o set continuar além de N-1 (para chegar
+  // a NxN), o tie-break implica a regra de vantagem de 2 games.
+  describe("tie-break implica vantagem de 2 games", () => {
+    const set6Tiebreak: MatchFormat = {
+      kind: "SET_ATE_N",
+      games: 6,
+      tiebreak: true,
+      difMinima2: false,
+    };
+
+    it("rejeita 6x5 (venceria sem os 2 games de vantagem)", () => {
+      expectError({ gamesA: 6, gamesB: 5 }, set6Tiebreak);
+      expectError({ gamesA: 5, gamesB: 6 }, set6Tiebreak);
+    });
+
+    it("aceita 6x0..6x4 e 7x5", () => {
+      expectOk({ gamesA: 6, gamesB: 0 }, set6Tiebreak);
+      expectOk({ gamesA: 6, gamesB: 4 }, set6Tiebreak);
+      expectOk({ gamesA: 7, gamesB: 5 }, set6Tiebreak);
+    });
+
+    it("resolve 6x6 no tie-break", () => {
+      expectError({ gamesA: 6, gamesB: 6 }, set6Tiebreak);
+      const result = expectOk(
+        { gamesA: 6, gamesB: 6, tiebreakA: 10, tiebreakB: 8 },
+        set6Tiebreak,
+      );
+      if (result.ok) expect(result.outcome).toBe("A");
+    });
+  });
+
+  describe("sem tie-break (primeiro a N, corrida)", () => {
+    const race6: MatchFormat = {
+      kind: "SET_ATE_N",
+      games: 6,
+      tiebreak: false,
+      difMinima2: false,
+    };
+
+    it("aceita 6x5 e rejeita 7x5", () => {
+      expectOk({ gamesA: 6, gamesB: 5 }, race6);
+      expectError({ gamesA: 7, gamesB: 5 }, race6);
+    });
+
+    it("rejeita empate em 6x6", () => {
+      expectError({ gamesA: 6, gamesB: 6 }, race6);
+    });
+  });
+
+  describe("sem tie-break com vantagem de 2 (set de vantagem)", () => {
+    const advantage6: MatchFormat = {
+      kind: "SET_ATE_N",
+      games: 6,
+      tiebreak: false,
+      difMinima2: true,
+    };
+
+    it("aceita 7x5 e rejeita 6x5", () => {
+      expectOk({ gamesA: 7, gamesB: 5 }, advantage6);
+      expectError({ gamesA: 6, gamesB: 5 }, advantage6);
+    });
+
+    it("rejeita 6x6 (sem tie-break o set só acaba com 2 de vantagem)", () => {
+      expectError({ gamesA: 6, gamesB: 6 }, advantage6);
+    });
+  });
 });
 
 describe("PRO_SET", () => {

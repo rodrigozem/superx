@@ -51,7 +51,12 @@ export function describeMatchFormat(format: MatchFormat): string {
         ? `Soma fixa de ${format.total} games`
         : `Soma fixa de ${format.total} games com ponto decisivo`;
     case "SET_ATE_N":
-      return `Set até ${format.games} games${format.tiebreak ? " com tie-break" : ""}`;
+      if (format.tiebreak) {
+        return `Set até ${format.games} games com tie-break`;
+      }
+      return format.difMinima2
+        ? `Set até ${format.games} games (vantagem de 2)`
+        : `Set até ${format.games} games (primeiro a ${format.games})`;
     case "PRO_SET":
       return "Pro Set até 8 games";
     case "TEMPO":

@@ -80,6 +80,11 @@ export function validateScore(
     case "SET_ATE_N": {
       const winner = Math.max(gamesA, gamesB);
       const margin = Math.abs(gamesA - gamesB);
+      // O tie-break só existe para decidir NxN. Para o set chegar a NxN ele
+      // precisa continuar depois de N-1 (5x5 → 6x5 → 6x6). Isso só é possível
+      // com a regra de vantagem de 2, então o tie-break a implica: 6x5 nunca
+      // é um set encerrado quando há tie-break.
+      const winByTwo = format.difMinima2 || format.tiebreak;
 
       if (gamesA === gamesB) {
         if (!format.tiebreak || gamesA !== format.games) {
@@ -99,14 +104,14 @@ export function validateScore(
           : { ok: true, outcome: "B", effectiveGamesA: gamesA, effectiveGamesB: gamesB };
       }
 
-      const minMargin = format.difMinima2 ? 2 : 1;
+      const minMargin = winByTwo ? 2 : 1;
       if (winner < format.games) {
         return {
           ok: false,
           error: `O vencedor precisa atingir ${format.games} games.`,
         };
       }
-      if (!format.difMinima2 && winner !== format.games) {
+      if (!winByTwo && winner !== format.games) {
         return {
           ok: false,
           error: `O set termina em ${format.games} games.`,
@@ -115,7 +120,7 @@ export function validateScore(
       if (margin < minMargin) {
         return {
           ok: false,
-          error: format.difMinima2
+          error: winByTwo
             ? `É necessário vencer por diferença de ${minMargin} games.`
             : "Placar inválido.",
         };

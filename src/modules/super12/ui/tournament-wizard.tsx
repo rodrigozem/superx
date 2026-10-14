@@ -50,7 +50,7 @@ const MATCH_FORMAT_PRESETS: MatchFormat[] = [
     permitirEmpate: true,
     decisivoContaGame: true,
   },
-  { kind: "SET_ATE_N", games: 6, tiebreak: true, difMinima2: false },
+  { kind: "SET_ATE_N", games: 6, tiebreak: true, difMinima2: true },
   { kind: "PRO_SET", games: 8 },
   { kind: "TEMPO", minutos: 20 },
   { kind: "LIVRE" },
@@ -103,7 +103,7 @@ const RANKING_HELP =
   "Como a classificação é ordenada antes dos desempates: Vitórias, Pontos (pontuação de vitória/empate/derrota do torneio), Saldo de games ou Games pró. No empate seguem, nesta ordem: saldo de games, games pró, aproveitamento de games, confronto direto, mini-classificação e sorteio.";
 
 const MATCH_KINDS_HELP =
-  "Soma fixa: a soma dos games fecha no total (4 → 4x0, 3x1, 2x2; 6 → 6x0, 5x1, 4x2, 3x3). Set até N: o set vai até N games e empate só vale com tie-break. Pro Set: até 8 games com diferença de 2; 8x8 decide no tie-break. Tempo: o tempo é informativo e o placar é livre. Livre: qualquer placar é aceito.";
+  "Soma fixa: a soma dos games fecha no total (4 → 4x0, 3x1, 2x2; 6 → 6x0, 5x1, 4x2, 3x3). Set até N: vence quem fizer N games ou abrir 2 de vantagem (ex.: 6x4, 7x5); com tie-break, o empate em NxN (ex.: 6x6) vai ao ponto. Pro Set: até 8 games com diferença de 2; 8x8 decide no tie-break. Tempo: o tempo é informativo e o placar é livre. Livre: qualquer placar é aceito.";
 
 const SOMA_TOTAL_HELP =
   "Total obrigatório da soma dos games em cada jogo. Com 4, os placares válidos são 4x0, 3x1 e 2x2; com 6, são 6x0, 5x1, 4x2 e 3x3.";
@@ -115,13 +115,13 @@ const DECISIVO_HELP =
   "Quando o jogo termina empatado e há ponto decisivo: marcado, ele soma +1 game no placar (ex.: 4x3); desmarcado, o placar fica 3x3 e só o vencedor do decisivo é registrado.";
 
 const SET_GAMES_HELP =
-  "Primeiro a chegar a N games vence o set (ex.: 6 → vence quem fizer 6 games).";
+  "Base do set: jogo vai até N games (ex.: 6). O vencedor precisa fazer N games com a margem exigida — 2 de vantagem quando há tie-break ou a opção de diferença mínima; caso contrário, termina no primeiro a N.";
 
 const TIEBREAK_HELP =
-  "Permite o set empatado no total (ex.: 6x6), decidido no tie-break: mínimo 7 pontos e diferença de 2 (ex.: 8x6). Desmarcado, o set não aceita empate.";
+  "Decide o empate em NxN (ex.: 6x6) num ponto a ponto: mínimo 7 e diferença de 2 (ex.: 8x6). Como o set só chega a NxN se ninguém abrir 2 games de vantagem, marcar o tie-break liga automaticamente a diferença mínima de 2 — placares como 6x5 não são um set encerrado (5x5 vai a 7x5; 6x6 vai ao tie-break).";
 
 const DIF_MINIMA_HELP =
-  "Com a opção, o vencedor precisa vencer por 2 games de vantagem (ex.: 6x4 ou 7x5). Sem ela, o set termina exatamente em N x X (ex.: 6x5 vale).";
+  "O vencedor precisa abrir 2 games de vantagem (ex.: 6x4 ou 7x5). Com o tie-break marcado, esta opção é obrigatória. Sem ela e sem tie-break, o set termina exatamente em N (ex.: 6x5 vale).";
 
 const MINUTOS_HELP =
   "Duração da partida em minutos. É informativa — aparece na descrição do formato; o placar lançado é livre.";
@@ -507,17 +507,29 @@ export function TournamentWizard() {
                   <input
                     type="checkbox"
                     checked={draft.matchFormat.tiebreak}
-                    onChange={(event) => updateMatchFormat({ tiebreak: event.target.checked })}
+                    onChange={(event) =>
+                      updateMatchFormat({
+                        tiebreak: event.target.checked,
+                        ...(event.target.checked ? { difMinima2: true } : {}),
+                      })
+                    }
                   />
                   Tie-break
                 </label>
                 <HelpTip label="Tie-break" text={TIEBREAK_HELP} />
               </div>
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                <label className="flex items-center gap-2 text-sm text-navy-800 dark:text-navy-200">
+                <label
+                  className={`flex items-center gap-2 text-sm ${
+                    draft.matchFormat.tiebreak
+                      ? "text-zinc-400 dark:text-zinc-500"
+                      : "text-navy-800 dark:text-navy-200"
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={draft.matchFormat.difMinima2}
+                    disabled={draft.matchFormat.tiebreak}
                     onChange={(event) => updateMatchFormat({ difMinima2: event.target.checked })}
                   />
                   Diferença mínima de 2
