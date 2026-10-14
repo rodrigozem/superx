@@ -81,9 +81,9 @@ export function validateScore(
       const winner = Math.max(gamesA, gamesB);
       const margin = Math.abs(gamesA - gamesB);
       // O tie-break só existe para decidir NxN. Para o set chegar a NxN ele
-      // precisa continuar depois de N-1 (5x5 → 6x5 → 6x6). Isso só é possível
-      // com a regra de vantagem de 2, então o tie-break a implica: 6x5 nunca
-      // é um set encerrado quando há tie-break.
+      // precisa continuar depois de N-1 (5x5 → 6x5 → 6x6), o que exige a
+      // vantagem de 2. Logo o tie-break a implica, e o placar fica limitado a
+      // NxN: não existe 7x5/8x6 (o set "até N" nunca passa de N).
       const winByTwo = format.difMinima2 || format.tiebreak;
 
       if (gamesA === gamesB) {
@@ -102,6 +102,13 @@ export function validateScore(
         return (input.tiebreakA as number) > (input.tiebreakB as number)
           ? { ok: true, outcome: "A", effectiveGamesA: gamesA, effectiveGamesB: gamesB }
           : { ok: true, outcome: "B", effectiveGamesA: gamesA, effectiveGamesB: gamesB };
+      }
+
+      if (format.tiebreak && winner > format.games) {
+        return {
+          ok: false,
+          error: `Com tie-break o set termina no máximo em ${format.games}x${format.games}.`,
+        };
       }
 
       const minMargin = winByTwo ? 2 : 1;
@@ -187,6 +194,34 @@ export function validScoreChips(
     chips.push({ gamesA: a, gamesB: format.total - a });
   }
   return chips;
+}
+
+/**
+ * O placar exige tie-break? Só no empate exato NxN (SET_ATE_N com tie-break)
+ * ou 8x8 no Pro Set. Em qualquer outro empate não há tie-break.
+ */
+export function isTiebreakScore(
+  format: MatchFormat,
+  gamesA: number,
+  gamesB: number,
+): boolean {
+  if (gamesA !== gamesB) return false;
+  if (format.kind === "PRO_SET") return gamesA === 8;
+  if (format.kind === "SET_ATE_N") {
+    return format.tiebreak && gamesA === format.games;
+  }
+  return false;
+}
+
+/**
+ * Teto de games por lado na UI. No SET_ATE_N com tie-break (ou primeiro a N) o
+ * set não passa de N; no set de vantagem e nos demais formatos não há teto.
+ */
+export function maxGamesPerSide(format: MatchFormat): number | undefined {
+  if (format.kind === "SET_ATE_N" && (format.tiebreak || !format.difMinima2)) {
+    return format.games;
+  }
+  return undefined;
 }
 
 export function formatScoreLabel(

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatScoreLabel,
+  isTiebreakScore,
+  maxGamesPerSide,
   validScoreChips,
   validateScore,
   type ScoreInput,
@@ -129,10 +131,19 @@ describe("SOMA_FIXA de 4 games", () => {
 });
 
 describe("SET_ATE_N", () => {
-  it("aceita 6x4 e 7x5, rejeita 6x5 com diferença mínima 2", () => {
-    expectOk({ gamesA: 6, gamesB: 4 }, set6comTiebreak);
-    expectOk({ gamesA: 7, gamesB: 5 }, set6comTiebreak);
+  it("com tie-break o set para em NxN: aceita 6x0..6x4", () => {
+    for (const b of [0, 1, 2, 3, 4]) {
+      expectOk({ gamesA: 6, gamesB: b }, set6comTiebreak);
+      expectOk({ gamesA: b, gamesB: 6 }, set6comTiebreak);
+    }
+  });
+
+  it("com tie-break rejeita 6x5 (sem vantagem) e 7x5/8x6 (passa de 6)", () => {
     expectError({ gamesA: 6, gamesB: 5 }, set6comTiebreak);
+    expectError({ gamesA: 5, gamesB: 6 }, set6comTiebreak);
+    expectError({ gamesA: 7, gamesB: 5 }, set6comTiebreak);
+    expectError({ gamesA: 8, gamesB: 6 }, set6comTiebreak);
+    expectError({ gamesA: 9, gamesB: 7 }, set6comTiebreak);
   });
 
   it("exige tie-break em 6x6", () => {
@@ -144,10 +155,8 @@ describe("SET_ATE_N", () => {
     if (result.ok) expect(result.outcome).toBe("A");
   });
 
-  // O preset do wizard é "Set até 6 games com tie-break" com difMinima2=false.
-  // Como o tie-break só faz sentido se o set continuar além de N-1 (para chegar
-  // a NxN), o tie-break implica a regra de vantagem de 2 games.
-  describe("tie-break implica vantagem de 2 games", () => {
+  // Preset do wizard: "Set até 6 games com tie-break" com difMinima2=false.
+  describe("tie-break com difMinima2=false", () => {
     const set6Tiebreak: MatchFormat = {
       kind: "SET_ATE_N",
       games: 6,
@@ -155,15 +164,16 @@ describe("SET_ATE_N", () => {
       difMinima2: false,
     };
 
-    it("rejeita 6x5 (venceria sem os 2 games de vantagem)", () => {
-      expectError({ gamesA: 6, gamesB: 5 }, set6Tiebreak);
-      expectError({ gamesA: 5, gamesB: 6 }, set6Tiebreak);
+    it("não deixa o set passar de 6x6", () => {
+      expectError({ gamesA: 7, gamesB: 5 }, set6Tiebreak);
+      expectError({ gamesA: 8, gamesB: 6 }, set6Tiebreak);
     });
 
-    it("aceita 6x0..6x4 e 7x5", () => {
-      expectOk({ gamesA: 6, gamesB: 0 }, set6Tiebreak);
-      expectOk({ gamesA: 6, gamesB: 4 }, set6Tiebreak);
-      expectOk({ gamesA: 7, gamesB: 5 }, set6Tiebreak);
+    it("rejeita 6x5 e aceita 6x0..6x4", () => {
+      expectError({ gamesA: 6, gamesB: 5 }, set6Tiebreak);
+      for (const b of [0, 1, 2, 3, 4]) {
+        expectOk({ gamesA: 6, gamesB: b }, set6Tiebreak);
+      }
     });
 
     it("resolve 6x6 no tie-break", () => {
@@ -209,6 +219,37 @@ describe("SET_ATE_N", () => {
 
     it("rejeita 6x6 (sem tie-break o set só acaba com 2 de vantagem)", () => {
       expectError({ gamesA: 6, gamesB: 6 }, advantage6);
+    });
+  });
+
+  describe("isTiebreakScore — tie-break só no placar exato", () => {
+    it("só é true em 6x6 no set com tie-break", () => {
+      expect(isTiebreakScore(set6comTiebreak, 6, 6)).toBe(true);
+      expect(isTiebreakScore(set6comTiebreak, 4, 4)).toBe(false);
+      expect(isTiebreakScore(set6comTiebreak, 6, 5)).toBe(false);
+      expect(isTiebreakScore(set6comTiebreak, 0, 0)).toBe(false);
+    });
+
+    it("no Pro Set só em 8x8", () => {
+      const proSet: MatchFormat = { kind: "PRO_SET", games: 8 };
+      expect(isTiebreakScore(proSet, 8, 8)).toBe(true);
+      expect(isTiebreakScore(proSet, 7, 7)).toBe(false);
+    });
+  });
+
+  describe("maxGamesPerSide", () => {
+    it("limita a N no set com tie-break ou primeiro a N", () => {
+      expect(maxGamesPerSide(set6comTiebreak)).toBe(6);
+      expect(
+        maxGamesPerSide({ kind: "SET_ATE_N", games: 6, tiebreak: false, difMinima2: false }),
+      ).toBe(6);
+    });
+
+    it("não limita no set de vantagem nem nos outros formatos", () => {
+      expect(
+        maxGamesPerSide({ kind: "SET_ATE_N", games: 6, tiebreak: false, difMinima2: true }),
+      ).toBeUndefined();
+      expect(maxGamesPerSide(somaFixa6)).toBeUndefined();
     });
   });
 });

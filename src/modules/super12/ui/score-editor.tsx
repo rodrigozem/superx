@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import {
+  isTiebreakScore,
+  maxGamesPerSide,
   validScoreChips,
   validateScore,
   type MatchFormat,
@@ -22,13 +24,6 @@ type ScoreEditorProps = {
   onSubmit: (input: ScoreInput) => Promise<SubmitResult>;
   onClear: () => Promise<void>;
 };
-
-function needsTiebreak(format: MatchFormat, gamesA: number, gamesB: number) {
-  if (gamesA !== gamesB) return false;
-  if (format.kind === "PRO_SET") return true;
-  if (format.kind === "SET_ATE_N") return format.tiebreak;
-  return false;
-}
 
 function needsDecisive(format: MatchFormat, gamesA: number, gamesB: number) {
   return (
@@ -64,9 +59,15 @@ export function ScoreEditor({
   const [saving, setSaving] = useState(false);
 
   const chips = validScoreChips(format);
-  const showTiebreak = needsTiebreak(format, gamesA, gamesB);
+  const showTiebreak = isTiebreakScore(format, gamesA, gamesB);
   const showDecisive = needsDecisive(format, gamesA, gamesB);
+  const maxGames = maxGamesPerSide(format);
   const untouched = gamesA === 0 && gamesB === 0;
+
+  function clampGames(value: number) {
+    const floor = Math.max(0, Math.floor(value) || 0);
+    return maxGames === undefined ? floor : Math.min(floor, maxGames);
+  }
 
   const validation = validateScore(format, {
     gamesA,
@@ -117,15 +118,17 @@ export function ScoreEditor({
               className={scoreClassName}
               type="number"
               min={0}
+              max={maxGames}
               inputMode="numeric"
               value={gamesA}
-              onChange={(event) => setGamesA(Math.max(0, Number(event.target.value) || 0))}
+              onChange={(event) => setGamesA(clampGames(Number(event.target.value) || 0))}
               aria-label={`Games do time A (${teamAName})`}
             />
             <button
               type="button"
               className={stepperClassName}
-              onClick={() => setGamesA((value) => value + 1)}
+              onClick={() => setGamesA((value) => clampGames(value + 1))}
+              disabled={maxGames !== undefined && gamesA >= maxGames}
               aria-label="Aumentar games do time A"
             >
               +
@@ -152,15 +155,17 @@ export function ScoreEditor({
               className={scoreClassName}
               type="number"
               min={0}
+              max={maxGames}
               inputMode="numeric"
               value={gamesB}
-              onChange={(event) => setGamesB(Math.max(0, Number(event.target.value) || 0))}
+              onChange={(event) => setGamesB(clampGames(Number(event.target.value) || 0))}
               aria-label={`Games do time B (${teamBName})`}
             />
             <button
               type="button"
               className={stepperClassName}
-              onClick={() => setGamesB((value) => value + 1)}
+              onClick={() => setGamesB((value) => clampGames(value + 1))}
+              disabled={maxGames !== undefined && gamesB >= maxGames}
               aria-label="Aumentar games do time B"
             >
               +
