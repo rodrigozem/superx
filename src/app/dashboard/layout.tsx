@@ -13,11 +13,11 @@ export default async function DashboardLayout({
   return (
     <div className="flex flex-1 flex-col bg-canvas">
       <header className="sticky top-0 z-40 border-b border-white/8 bg-navy-950/92 backdrop-blur-md">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-6 px-6 sm:px-3 sm:max-w-full">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-6 px-6">
 <Image
               src="/logo.png"
               alt="Super X"
-              className="h-9 w-full object-contain shrink-0"
+              className="h-6 w-auto"
             />
 
           <NavTabs isAdmin={user.role === "admin"} />
