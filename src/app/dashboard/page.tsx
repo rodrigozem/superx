@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const user = await requireUser();
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10 sm:py-6">
       <div className="mb-8 space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-navy-900 dark:text-zinc-50">
           Bem-vindo, {user.name}
