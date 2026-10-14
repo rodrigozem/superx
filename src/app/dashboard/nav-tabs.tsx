@@ -3,11 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
+export type NavTab = { href: string; label: string; adminOnly?: boolean };
+
+export const NAV_TABS: NavTab[] = [
   { href: "/dashboard", label: "Painel" },
   { href: "/dashboard/torneios", label: "Torneios" },
   { href: "/dashboard/users", label: "Usuários", adminOnly: true },
 ];
+
+export function isNavTabActive(pathname: string, href: string): boolean {
+  return href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+}
+
+export function visibleNavTabs(isAdmin: boolean): NavTab[] {
+  return NAV_TABS.filter((tab) => !tab.adminOnly || isAdmin);
+}
 
 export function NavTabs({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
@@ -15,13 +25,10 @@ export function NavTabs({ isAdmin }: { isAdmin: boolean }) {
   return (
     <nav
       aria-label="Navegação principal"
-      className="flex w-full items-stretch gap-0.5 overflow-x-auto self-stretch sm:w-auto"
+      className="flex w-full items-stretch gap-0.5 self-stretch sm:w-auto"
     >
-      {TABS.filter((tab) => !tab.adminOnly || isAdmin).map((tab) => {
-        const active =
-          tab.href === "/dashboard"
-            ? pathname === tab.href
-            : pathname.startsWith(tab.href);
+      {visibleNavTabs(isAdmin).map((tab) => {
+        const active = isNavTabActive(pathname, tab.href);
         return (
           <Link
             key={tab.href}

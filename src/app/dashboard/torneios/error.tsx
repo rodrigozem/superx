@@ -15,7 +15,7 @@ export default function TournamentsError({
   }, [error]);
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+    <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
       <div className="rounded-xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900 dark:bg-navy-900">
         <h1 className="text-lg font-semibold text-navy-900 dark:text-zinc-50">
           Não foi possível carregar os torneios

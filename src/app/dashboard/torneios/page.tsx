@@ -15,7 +15,7 @@ export default async function TournamentsPage() {
   await requireUser();
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+    <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-navy-900 dark:text-zinc-50">
