@@ -23,6 +23,7 @@ type ScoreEditorProps = {
   teamBName: string;
   onSubmit: (input: ScoreInput) => Promise<SubmitResult>;
   onClear: () => Promise<void>;
+  onCancel?: () => void;
 };
 
 function needsDecisive(format: MatchFormat, gamesA: number, gamesB: number) {
@@ -47,6 +48,7 @@ export function ScoreEditor({
   teamBName,
   onSubmit,
   onClear,
+  onCancel,
 }: ScoreEditorProps) {
   const [gamesA, setGamesA] = useState(match.gamesA ?? 0);
   const [gamesB, setGamesB] = useState(match.gamesB ?? 0);
@@ -261,6 +263,16 @@ export function ScoreEditor({
         >
           {saving ? "Salvando..." : "Salvar placar"}
         </button>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-navy-800 transition hover:bg-zinc-100 disabled:opacity-40 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
+          >
+            Cancelar
+          </button>
+        ) : null}
         {match.gamesA !== undefined ? (
           <button
             type="button"

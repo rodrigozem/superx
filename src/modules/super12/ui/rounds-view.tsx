@@ -218,6 +218,7 @@ function MatchCard({
             teamBName={teamB}
             onSubmit={onSubmit}
             onClear={onClear}
+            onCancel={onToggle}
           />
         ) : (
           <button
