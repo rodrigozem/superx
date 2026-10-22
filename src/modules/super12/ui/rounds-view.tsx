@@ -4,10 +4,16 @@ import { useMemo, useState } from "react";
 
 import type { MatchFormat, ScoreInput } from "@/modules/super12/domain";
 
-import { clearScore, recordScore, type StoredMatch, type StoredTournament } from "@/modules/super12/data";
+import {
+  clearScore,
+  recordScore,
+  type StoredMatch,
+  type StoredTournament,
+} from "@/modules/super12/data";
 
+import { CheckIcon } from "./icons";
 import { MATCH_STATUS_LABEL } from "./labels";
-import { ScoreEditor } from "./score-editor";
+import { ScoreModal } from "./score-modal";
 
 type RoundsViewProps = {
   tournament: StoredTournament;
@@ -35,6 +41,14 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
   );
 
   const byes = tournament.byesByRound[String(round)] ?? [];
+
+  const editingMatch = useMemo(
+    () => (editingId ? (matches.find((match) => match.id === editingId) ?? null) : null),
+    [matches, editingId],
+  );
+
+  const teamLabel = (ids: [string, string]) =>
+    ids.map((id) => names.get(id) ?? id).join(" / ");
 
   async function handleSubmit(matchId: string, input: ScoreInput): Promise<SubmitResult> {
     const result = await recordScore(matchId, input);
@@ -65,7 +79,7 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
               className={
                 active
                   ? "rounded-lg bg-navy-900 px-3 py-1.5 text-sm font-semibold text-white dark:bg-navy-800"
-                  : "rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
+                  : "rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
               }
             >
               R{value}
@@ -86,7 +100,7 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {roundMatches.map((match) => (
           <MatchCard
             key={match.id}
@@ -94,15 +108,7 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
             names={names}
             matchFormat={tournament.config.matchFormat}
             courtNames={tournament.config.courtNames}
-            editing={editingId === match.id}
-            onToggle={() =>
-              setEditingId((current) => (current === match.id ? null : match.id))
-            }
-            onSubmit={(input) => handleSubmit(match.id, input)}
-            onClear={async () => {
-              await clearScore(match.id);
-              setEditingId(null);
-            }}
+            onOpen={() => setEditingId(match.id)}
           />
         ))}
       </div>
@@ -111,6 +117,21 @@ export function RoundsView({ tournament, matches }: RoundsViewProps) {
         <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-navy-600">
           Nenhum jogo nesta rodada.
         </p>
+      ) : null}
+
+      {editingMatch ? (
+        <ScoreModal
+          match={editingMatch}
+          format={tournament.config.matchFormat}
+          teamAName={teamLabel(editingMatch.teamA)}
+          teamBName={teamLabel(editingMatch.teamB)}
+          onSubmit={(input) => handleSubmit(editingMatch.id, input)}
+          onClear={async () => {
+            await clearScore(editingMatch.id);
+            setEditingId(null);
+          }}
+          onClose={() => setEditingId(null)}
+        />
       ) : null}
     </div>
   );
@@ -121,10 +142,7 @@ type MatchCardProps = {
   names: Map<string, string>;
   matchFormat: MatchFormat;
   courtNames?: string[];
-  editing: boolean;
-  onToggle: () => void;
-  onSubmit: (input: ScoreInput) => Promise<SubmitResult>;
-  onClear: () => Promise<void>;
+  onOpen: () => void;
 };
 
 function MatchCard({
@@ -132,10 +150,7 @@ function MatchCard({
   names,
   matchFormat,
   courtNames,
-  editing,
-  onToggle,
-  onSubmit,
-  onClear,
+  onOpen,
 }: MatchCardProps) {
   const teamA = match.teamA.map((id) => names.get(id) ?? id).join(" / ");
   const teamB = match.teamB.map((id) => names.get(id) ?? id).join(" / ");
@@ -164,27 +179,32 @@ function MatchCard({
         <span>
           {court} · Turno {match.turn}
         </span>
-        <span>{MATCH_STATUS_LABEL[match.status]}</span>
+        <span className="inline-flex items-center gap-1">
+          {match.status === "FINALIZADO" ? (
+            <CheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+          ) : null}
+          {MATCH_STATUS_LABEL[match.status]}
+        </span>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <span
           className={
             winnerA
-              ? "text-sm font-semibold text-navy-900 dark:text-zinc-50"
-              : "text-sm text-zinc-600 dark:text-zinc-300"
+              ? "text-xs font-semibold text-navy-900 dark:text-zinc-50"
+              : "text-xs text-zinc-600 dark:text-zinc-300"
           }
         >
           {teamA}
         </span>
-        <span className="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-sm font-semibold tabular-nums text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
+        <span className="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold tabular-nums text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
           {played ? `${gamesA}x${gamesB}` : "—"}
         </span>
         <span
           className={
             winnerB
-              ? "text-sm font-semibold text-navy-900 dark:text-zinc-50"
-              : "text-sm text-zinc-600 dark:text-zinc-300"
+              ? "text-xs font-semibold text-navy-900 dark:text-zinc-50"
+              : "text-xs text-zinc-600 dark:text-zinc-300"
           }
         >
           {teamB}
@@ -210,25 +230,13 @@ function MatchCard({
       ) : null}
 
       <div className="mt-3">
-        {editing ? (
-          <ScoreEditor
-            match={match}
-            format={matchFormat}
-            teamAName={teamA}
-            teamBName={teamB}
-            onSubmit={onSubmit}
-            onClear={onClear}
-            onCancel={onToggle}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={onToggle}
-            className="w-full rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
-          >
-            {played ? "Editar placar" : "Informar placar"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onOpen}
+          className="w-full rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
+        >
+          {played ? "Editar placar" : "Informar placar"}
+        </button>
       </div>
     </div>
   );

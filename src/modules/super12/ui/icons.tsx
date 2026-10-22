@@ -49,3 +49,11 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg {...baseProps} className={className}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
