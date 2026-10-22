@@ -11,6 +11,7 @@ import type {
 } from "./types";
 
 export const FORMAT_PLAYERS: Record<Format, number> = {
+  SUPER6: 6,
   SUPER8: 8,
   SUPER10: 10,
   SUPER12: 12,
@@ -319,17 +320,16 @@ function pickBestRounds(
 }
 
 /**
- * Super 10 — modo "Parceiro de todos": usa o método do círculo (cada par é
- * parceiro uma vez) e descansa 1 dupla por rodada. O backtracking exige que
- * todo atleta descanse 1 ou 2 rodadas — com 9 rodadas e 2 descansos por rodada
- * são 18 descansos, ou seja, 8 atletas com 2 e 2 atletas com 1 — o que garante
- * 7 ou 8 jogos por atleta.
+ * Modo "Parceiro de todos" para formatos com número ímpar de duplas por
+ * rodada (Super 6 = 3 duplas, Super 10 = 5 duplas): usa o método do círculo
+ * (cada par é parceiro uma vez) e descansa 1 dupla por rodada. O backtracking
+ * exige que todo atleta descanse 1 ou 2 rodadas.
  */
-function super10PartnerOfAll(seed: number): RoundPairs[] {
+function partnerOfAll(n: number, seed: number): RoundPairs[] {
   const rng = createRng(seed);
-  const circles = circleMethodPairs(10);
+  const circles = circleMethodPairs(n);
   const chosen = new Array<number>(circles.length).fill(-1);
-  const restCount = new Array<number>(10).fill(0);
+  const restCount = new Array<number>(n).fill(0);
   const order = shuffle(
     circles.map((_, index) => index),
     rng,
@@ -660,6 +660,9 @@ function buildSchedule(
 
   const metrics = computeMetrics(players, rounds, matches);
   if (
+    // No Super 6 são só 5 jogos (1 por rodada, 1 dupla descansa): é esperado
+    // que alguns pares não se enfrentem, então não há o que "relaxar".
+    config.format !== "SUPER6" &&
     config.scheduleMode !== "REDUZIDO" &&
     (metrics.opponentMeetingHistogram[0] ?? 0) > 0
   ) {
@@ -707,8 +710,16 @@ export function generateSchedule(
         );
       }
     } else {
-      roundPairs = super10PartnerOfAll(seed);
+      roundPairs = partnerOfAll(10, seed);
     }
+  } else if (config.format === "SUPER6") {
+    // 6 atletas = 3 duplas por rodada: 2 jogam (1 jogo) e 1 dupla descansa.
+    const all = partnerOfAll(6, seed);
+    const isReduced = config.scheduleMode === "REDUZIDO";
+    const count = isReduced
+      ? clamp(Math.round(config.rounds ?? all.length), 1, all.length)
+      : all.length;
+    roundPairs = isReduced ? pickBestRounds(all, count, seed) : all;
   } else {
     const all: RoundPairs[] = circleMethodPairs(expected).map((pairs) => ({
       pairs,

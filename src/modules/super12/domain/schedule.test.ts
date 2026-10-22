@@ -101,6 +101,73 @@ describe("generateSchedule — cobertura de confrontos (Super 8)", () => {
   }, 60_000);
 });
 
+describe("generateSchedule — Super 6 completo", () => {
+  const schedule = generateSchedule(
+    createDefaultConfig({ format: "SUPER6", scheduleMode: "COMPLETO", courts: 1 }),
+    makePlayers(6),
+    11,
+  );
+
+  it("gera 5 rodadas / 5 jogos / 1 por rodada", () => {
+    expect(schedule.rounds).toHaveLength(5);
+    expect(schedule.matches).toHaveLength(5);
+    for (const round of schedule.rounds) expect(round.matches).toHaveLength(1);
+  });
+
+  it("não repete dupla e equilibra descansos", () => {
+    assertNoDoubleBooking(schedule);
+    expect(schedule.metrics.partnerRepeatPairs).toBe(0);
+    expect(schedule.metrics.byesPerPlayerMin).toBeGreaterThanOrEqual(1);
+    expect(schedule.metrics.byesPerPlayerMax).toBeLessThanOrEqual(2);
+    const counts = [...gamesPerPlayer(schedule).values()];
+    expect(Math.min(...counts)).toBeGreaterThanOrEqual(3);
+    expect(Math.max(...counts)).toBeLessThanOrEqual(4);
+    expect(FORMAT_PLAYERS.SUPER6).toBe(6);
+  });
+
+  it("é determinístico", () => {
+    const again = generateSchedule(
+      createDefaultConfig({ format: "SUPER6", scheduleMode: "COMPLETO", courts: 1 }),
+      makePlayers(6),
+      11,
+    );
+    expect(JSON.stringify(again)).toBe(JSON.stringify(schedule));
+  });
+
+  it("modo reduzido gera menos rodadas", () => {
+    const reduced = generateSchedule(
+      createDefaultConfig({
+        format: "SUPER6",
+        scheduleMode: "REDUZIDO",
+        rounds: 3,
+        courts: 1,
+      }),
+      makePlayers(6),
+      11,
+    );
+    expect(reduced.rounds).toHaveLength(3);
+    expect(reduced.matches).toHaveLength(3);
+  });
+
+  it("cumpre os invariantes em qualquer seed (0–49)", () => {
+    for (let seed = 0; seed <= 49; seed += 1) {
+      const current = generateSchedule(
+        createDefaultConfig({
+          format: "SUPER6",
+          scheduleMode: "COMPLETO",
+          courts: ((seed % 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6,
+        }),
+        makePlayers(6),
+        seed,
+      );
+      expect(current.matches, `seed ${seed}`).toHaveLength(5);
+      assertNoDoubleBooking(current);
+      expect(current.metrics.partnerRepeatPairs, `seed ${seed}`).toBe(0);
+      expect(current.metrics.byesPerPlayerMin, `seed ${seed}`).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
 describe("generateSchedule — Super 12 completo", () => {
   const schedule = generateSchedule(
     createDefaultConfig({ format: "SUPER12", scheduleMode: "COMPLETO", courts: 3 }),

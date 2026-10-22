@@ -14,6 +14,7 @@ import {
   listMatches,
   listTournaments,
   recordScore,
+  renameTournament,
 } from "./tournament-repository";
 import type { StoredMatch, StoredTournament } from "./types";
 
@@ -86,6 +87,27 @@ describe("createTournament", () => {
     await expect(listTournaments(db)).resolves.toHaveLength(1);
   });
 
+  it("gera Super 6 com 5 rodadas e 5 jogos", async () => {
+    const result = await createTournament(
+      draft({
+        format: "SUPER6",
+        courts: 1,
+        players: Array.from({ length: 6 }, (_, index) => ({
+          name: `Atleta ${index + 1}`,
+        })),
+      }),
+      db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const matches = await listMatches(result.data.id, db);
+    expect(matches).toHaveLength(5);
+    expect(new Set(matches.map((match) => match.round)).size).toBe(5);
+    expect(Object.keys(result.data.byesByRound)).toHaveLength(5);
+  });
+
   it("gera Super 10 com 10 rodadas e 20 jogos", async () => {
     const result = await createTournament(
       draft({
@@ -120,6 +142,19 @@ describe("createTournament", () => {
     const matches = await listMatches(result.data.id, db);
     expect(matches).toHaveLength(12);
     expect(new Set(matches.map((match) => match.round)).size).toBe(4);
+  });
+
+  it("persiste a imagem de capa", async () => {
+    const result = await createTournament(
+      draft({ image: "data:image/jpeg;base64,AAAA" }),
+      db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const stored = await db.tournaments.get(result.data.id);
+    expect(stored?.image).toBe("data:image/jpeg;base64,AAAA");
   });
 
   it("rejeita a quantidade errada de atletas", async () => {
@@ -181,6 +216,33 @@ describe("createTournament", () => {
 
     const complete = parseTournamentDraft(draft({ scheduleMode: "COMPLETO" }));
     expect(complete.ok).toBe(true);
+  });
+
+  it("valida Super 6 reduzido com no máximo 5 rodadas", () => {
+    const sixPlayers = Array.from({ length: 6 }, (_, index) => ({
+      name: `Atleta ${index + 1}`,
+    }));
+
+    const ok = parseTournamentDraft(
+      draft({
+        format: "SUPER6",
+        scheduleMode: "REDUZIDO",
+        rounds: 5,
+        players: sixPlayers,
+      }),
+    );
+    expect(ok.ok).toBe(true);
+
+    const tooMany = parseTournamentDraft(
+      draft({
+        format: "SUPER6",
+        scheduleMode: "REDUZIDO",
+        rounds: 6,
+        players: sixPlayers,
+      }),
+    );
+    expect(tooMany.ok).toBe(false);
+    if (!tooMany.ok) expect(tooMany.fieldErrors.rounds).toContain("5");
   });
 
   it("mantém a mesma tabela para a mesma seed e muda com outra seed", async () => {
@@ -274,6 +336,41 @@ describe("recordScore", () => {
     expect(cleared.status).toBe("AGENDADO");
     expect(cleared.gamesA).toBeUndefined();
     expect(cleared.gamesB).toBeUndefined();
+  });
+});
+
+describe("renameTournament", () => {
+  it("altera o nome, faz trim e persiste", async () => {
+    const created = await createTournament(draft(), db);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const renamed = await renameTournament(created.data.id, "  Liga de Verão  ", db);
+    expect(renamed.ok).toBe(true);
+    if (!renamed.ok) return;
+    expect(renamed.data.name).toBe("Liga de Verão");
+
+    const stored = await db.tournaments.get(created.data.id);
+    expect(stored?.name).toBe("Liga de Verão");
+  });
+
+  it("rejeita nome vazio ou acima de 80 caracteres", async () => {
+    const created = await createTournament(draft(), db);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    await expect(
+      renameTournament(created.data.id, "   ", db),
+    ).resolves.toMatchObject({ ok: false });
+    await expect(
+      renameTournament(created.data.id, "x".repeat(81), db),
+    ).resolves.toMatchObject({ ok: false });
+  });
+
+  it("retorna erro quando o torneio não existe", async () => {
+    await expect(
+      renameTournament("nao-existe", "Novo nome", db),
+    ).resolves.toMatchObject({ ok: false });
   });
 });
 

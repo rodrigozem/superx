@@ -77,6 +77,7 @@ export async function createTournament(
   const tournament: StoredTournament = {
     id: tournamentId,
     name: data.name,
+    image: data.image,
     status: "EM_ANDAMENTO",
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -121,6 +122,34 @@ export async function getTournament(
   db: SuperTournamentDatabase = getDb(),
 ): Promise<StoredTournament | undefined> {
   return db.tournaments.get(id);
+}
+
+export async function renameTournament(
+  id: string,
+  name: string,
+  db: SuperTournamentDatabase = getDb(),
+): Promise<RepositoryResult<StoredTournament>> {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) {
+    return { ok: false, error: "Informe o nome do torneio." };
+  }
+  if (trimmed.length > 80) {
+    return { ok: false, error: "Use no máximo 80 caracteres." };
+  }
+
+  const tournament = await db.tournaments.get(id);
+  if (!tournament) return { ok: false, error: "Torneio não encontrado." };
+
+  const updated: StoredTournament = {
+    ...tournament,
+    name: trimmed,
+    updatedAt: now(),
+  };
+
+  await db.tournaments.put(updated);
+  notifyLocalChange();
+
+  return { ok: true, data: updated };
 }
 
 export async function listMatches(

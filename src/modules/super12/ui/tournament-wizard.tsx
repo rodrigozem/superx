@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 
 import {
   FORMAT_PLAYERS,
@@ -20,9 +20,11 @@ import {
   SCHEDULE_MODE_LABEL,
 } from "./labels";
 import { HelpTip } from "./help-tip";
+import { fileToTournamentImage } from "./image-utils";
 
 type Draft = {
   name: string;
+  image?: string;
   format: Format;
   scheduleMode: ScheduleMode;
   rounds: number;
@@ -33,7 +35,7 @@ type Draft = {
   players: string[];
 };
 
-const FORMATS: Format[] = ["SUPER8", "SUPER10", "SUPER12"];
+const FORMATS: Format[] = ["SUPER6", "SUPER8", "SUPER10", "SUPER12"];
 const RANKING_MODES: RankingMode[] = ["VITORIAS", "PONTOS", "SALDO_GAMES", "GAMES_PRO"];
 
 /** Presets exibidos nas opções de formato do jogo. */
@@ -71,6 +73,7 @@ function modesFor(format: Format): ScheduleMode[] {
 
 /** Rodadas da tabela "todos contra todos" em cada formato. */
 const FULL_ROUNDS: Record<Format, number> = {
+  SUPER6: 5,
   SUPER8: 7,
   SUPER10: 10,
   SUPER12: 11,
@@ -82,9 +85,11 @@ function defaultRounds(format: Format): number {
 }
 
 const FORMAT_HELP =
-  "Quantos atletas o torneio exige: Super 8 = 8, Super 10 = 10, Super 12 = 12. A tabela completa (todos contra todos) tem 7 rodadas no Super 8 e 11 no Super 12; o Super 10 usa os modos Equilibrado e Parceiro de todos.";
+  "Quantos atletas o torneio exige: Super 6 = 6, Super 8 = 8, Super 10 = 10, Super 12 = 12. A tabela completa tem 5 rodadas no Super 6, 7 no Super 8 e 11 no Super 12; o Super 10 usa os modos Equilibrado e Parceiro de todos.";
 
 const SCHEDULE_HELP: Record<Format, string> = {
+  SUPER6:
+    "Completo: 5 rodadas; cada rodada tem 1 jogo e 1 dupla descansa. Reduzido: você escolhe de 1 a 5 rodadas e o sistema mantém as que melhor equilibram os confrontos e os descansos.",
   SUPER8:
     "Completo: todos contra todos — 7 rodadas e 14 jogos. Reduzido: você escolhe de 1 a 7 rodadas e o sistema mantém as que melhor equilibram os confrontos e os descansos.",
   SUPER10:
@@ -188,6 +193,32 @@ export function TournamentWizard() {
     }));
   }
 
+  async function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrors((current) => ({ ...current, image: "Escolha um arquivo de imagem." }));
+      return;
+    }
+
+    try {
+      const image = await fileToTournamentImage(file);
+      setDraft((current) => ({ ...current, image }));
+      setErrors((current) => {
+        const next = { ...current };
+        delete next.image;
+        return next;
+      });
+    } catch {
+      setErrors((current) => ({
+        ...current,
+        image: "Não foi possível processar a imagem.",
+      }));
+    }
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     setErrors({});
@@ -195,6 +226,7 @@ export function TournamentWizard() {
     const result = await createTournament(
       {
         name: draft.name,
+        image: draft.image,
         format: draft.format,
         scheduleMode: draft.scheduleMode,
         rounds: draft.rounds,
@@ -256,6 +288,48 @@ export function TournamentWizard() {
             />
             {errors.name ? (
               <p className="text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <span className={labelClassName}>Imagem do torneio (opcional)</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-navy-800 transition hover:bg-zinc-50 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700">
+                Escolher imagem
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleImageChange}
+                />
+              </label>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                489 × 275 px (corte automático)
+              </span>
+              {draft.image ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft((current) => ({ ...current, image: undefined }))
+                  }
+                  className="text-xs font-medium text-red-600 underline dark:text-red-400"
+                >
+                  Remover
+                </button>
+              ) : null}
+            </div>
+            {draft.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={draft.image}
+                alt="Prévia da imagem do torneio"
+                width={489}
+                height={275}
+                className="h-auto w-full max-w-[489px] rounded-lg border border-zinc-200 object-cover dark:border-navy-700"
+              />
+            ) : null}
+            {errors.image ? (
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.image}</p>
             ) : null}
           </div>
 

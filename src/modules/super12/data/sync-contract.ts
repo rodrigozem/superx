@@ -10,7 +10,7 @@ import type { StoredMatch, StoredTournament } from "./types";
  */
 
 const configSchema = z.object({
-  format: z.enum(["SUPER8", "SUPER10", "SUPER12"]),
+  format: z.enum(["SUPER6", "SUPER8", "SUPER10", "SUPER12"]),
   scheduleMode: z.enum([
     "COMPLETO",
     "REDUZIDO",
@@ -66,6 +66,7 @@ const playerSchema = z.object({
 export const tournamentSchema = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1).max(80),
+  image: z.string().optional(),
   status: z.enum(["EM_ANDAMENTO", "ENCERRADO"]),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),

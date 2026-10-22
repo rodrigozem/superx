@@ -8,6 +8,7 @@ import type {
 } from "@/modules/super12/domain";
 
 export const FORMAT_LABEL: Record<Format, string> = {
+  SUPER6: "Super 6",
   SUPER8: "Super 8",
   SUPER10: "Super 10",
   SUPER12: "Super 12",

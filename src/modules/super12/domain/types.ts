@@ -1,9 +1,9 @@
 /**
- * Domínio do módulo "Super 12" (Super 8 / 10 / 12).
+ * Domínio do módulo "Super 12" (Super 6 / 8 / 10 / 12).
  * TypeScript puro — sem dependência de React/Next. 100% testável.
  */
 
-export type Format = "SUPER8" | "SUPER10" | "SUPER12";
+export type Format = "SUPER6" | "SUPER8" | "SUPER10" | "SUPER12";
 
 export type ScheduleMode =
   | "COMPLETO"

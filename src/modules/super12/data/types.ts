@@ -21,6 +21,8 @@ export interface StoredMatch extends Match {
 export interface StoredTournament {
   id: string;
   name: string;
+  /** Imagem de capa (data URL 489x275). Opcional. */
+  image?: string;
   status: TournamentStatus;
   createdAt: string;
   updatedAt: string;

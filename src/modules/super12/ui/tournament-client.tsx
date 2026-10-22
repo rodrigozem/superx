@@ -2,11 +2,21 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
 
 import { computeStandings } from "@/modules/super12/domain";
 
-import { getDb, setActiveTournament } from "@/modules/super12/data";
+import {
+  getDb,
+  renameTournament,
+  setActiveTournament,
+} from "@/modules/super12/data";
 
 import {
   describeMatchFormat,
@@ -20,14 +30,18 @@ import { StandingsTvPanel } from "./standings-tv";
 
 type TournamentClientProps = {
   id: string;
+  isAdmin: boolean;
 };
 
 type Tab = "RODADAS" | "CLASSIFICACAO";
 
-export function TournamentClient({ id }: TournamentClientProps) {
+export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
   const db = getDb();
   const [tab, setTab] = useState<Tab>("RODADAS");
   const [tvOpen, setTvOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
   // Referência estável: um onClose novo a cada re-render faria o painel da TV
   // rodar o cleanup do efeito e derrubar a tela cheia a cada resultado salvo.
   const closeTv = useCallback(() => setTvOpen(false), []);
@@ -90,6 +104,29 @@ export function TournamentClient({ id }: TournamentClientProps) {
   const finished = matches.filter((match) => match.status === "FINALIZADO").length;
   const showByes = Object.keys(tournament.byesByRound).length > 0;
 
+  function startRename() {
+    if (!tournament) return;
+    setNameDraft(tournament.name);
+    setRenameError(null);
+    setRenaming(true);
+  }
+
+  function cancelRename() {
+    setRenaming(false);
+    setRenameError(null);
+  }
+
+  async function handleRenameSubmit(event: FormEvent) {
+    event.preventDefault();
+    const result = await renameTournament(id, nameDraft, db);
+    if (result.ok) {
+      setRenaming(false);
+      setRenameError(null);
+    } else {
+      setRenameError(result.error);
+    }
+  }
+
   const openTvMode = () => {
     setTvOpen(true);
     const request = document.documentElement.requestFullscreen?.();
@@ -99,11 +136,65 @@ export function TournamentClient({ id }: TournamentClientProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-navy-800 dark:bg-navy-900">
+        {tournament.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={tournament.image}
+            alt={`Imagem do torneio ${tournament.name}`}
+            width={489}
+            height={275}
+            className="mb-4 h-auto w-full max-w-[489px] rounded-lg object-cover"
+          />
+        ) : null}
+
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-navy-900 dark:text-zinc-50">
-              {tournament.name}
-            </h2>
+          <div className="min-w-0">
+            {renaming ? (
+              <form
+                onSubmit={handleRenameSubmit}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <input
+                  value={nameDraft}
+                  onChange={(event) => setNameDraft(event.target.value)}
+                  maxLength={80}
+                  autoFocus
+                  aria-label="Nome do torneio"
+                  className="w-full max-w-sm rounded-lg border border-zinc-200 bg-field px-3 py-2 text-sm text-navy-900 outline-none focus:border-crimson-500 dark:border-navy-600 dark:bg-navy-950 dark:text-zinc-50"
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-crimson-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-crimson-700"
+                >
+                  Salvar
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelRename}
+                  className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
+                >
+                  Cancelar
+                </button>
+              </form>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold tracking-tight text-navy-900 dark:text-zinc-50">
+                  {tournament.name}
+                </h2>
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    onClick={startRename}
+                    className="rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
+                  >
+                    Editar nome
+                  </button>
+                ) : null}
+              </div>
+            )}
+            {renameError ? (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{renameError}</p>
+            ) : null}
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {FORMAT_LABEL[tournament.config.format]} ·{" "}
               {SCHEDULE_MODE_LABEL[tournament.config.scheduleMode]} ·{" "}

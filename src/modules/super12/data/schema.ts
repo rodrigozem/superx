@@ -30,7 +30,7 @@ export const createTournamentSchema = z
       .trim()
       .min(1, "Informe o nome do torneio.")
       .max(80, "Use no máximo 80 caracteres."),
-    format: z.enum(["SUPER8", "SUPER10", "SUPER12"]),
+    format: z.enum(["SUPER6", "SUPER8", "SUPER10", "SUPER12"]),
     scheduleMode: z.enum([
       "COMPLETO",
       "REDUZIDO",
@@ -65,6 +65,8 @@ export const createTournamentSchema = z
       )
       .min(4, "Informe pelo menos 4 atletas.")
       .max(12, "O formato máximo é 12 atletas."),
+    /** Imagem de capa do torneio (data URL 489x275), opcional. */
+    image: z.string().max(2_000_000).optional(),
   })
   .superRefine((draft, ctx) => {
     const expected = FORMAT_PLAYERS[draft.format];
@@ -110,7 +112,8 @@ export const createTournamentSchema = z
     }
 
     if (draft.scheduleMode === "REDUZIDO" && draft.format !== "SUPER10") {
-      const maxRounds = draft.format === "SUPER8" ? 7 : 11;
+      const maxRounds =
+        draft.format === "SUPER6" ? 5 : draft.format === "SUPER8" ? 7 : 11;
       if (draft.rounds === undefined) {
         ctx.addIssue({
           code: "custom",

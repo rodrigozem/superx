@@ -62,19 +62,31 @@ export function TournamentList() {
             key={tournament.id}
             className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-navy-800 dark:bg-navy-900"
           >
-            <div>
-              <p className="font-semibold text-navy-900 dark:text-zinc-50">
-                {tournament.name}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                {FORMAT_LABEL[tournament.config.format]} ·{" "}
-                {describeMatchFormat(tournament.config.matchFormat)} · seed{" "}
-                {tournament.config.seed} · criado em{" "}
-                {new Date(tournament.createdAt).toLocaleDateString("pt-BR")}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                {stats.done}/{stats.total} jogos finalizados
-              </p>
+            <div className="flex min-w-0 items-center gap-4">
+              {tournament.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={tournament.image}
+                  alt=""
+                  width={489}
+                  height={275}
+                  className="h-14 w-24 shrink-0 rounded-lg object-cover"
+                />
+              ) : null}
+              <div className="min-w-0">
+                <p className="font-semibold text-navy-900 dark:text-zinc-50">
+                  {tournament.name}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {FORMAT_LABEL[tournament.config.format]} ·{" "}
+                  {describeMatchFormat(tournament.config.matchFormat)} · seed{" "}
+                  {tournament.config.seed} · criado em{" "}
+                  {new Date(tournament.createdAt).toLocaleDateString("pt-BR")}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {stats.done}/{stats.total} jogos finalizados
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">

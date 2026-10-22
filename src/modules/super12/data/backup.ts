@@ -118,6 +118,7 @@ export async function importTournamentBackup(
     const stored: StoredTournament = {
       id: tournamentId,
       name: tournament.name,
+      image: tournament.image,
       status: tournament.status,
       createdAt: tournament.createdAt,
       updatedAt: timestamp,

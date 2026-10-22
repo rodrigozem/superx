@@ -9,13 +9,13 @@ export const metadata = {
 export default async function TournamentPage({
   params,
 }: PageProps<"/dashboard/torneios/[id]">) {
-  await requireUser();
+  const user = await requireUser();
 
   const { id } = await params;
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
-      <TournamentClient id={id} />
+      <TournamentClient id={id} isAdmin={user.role === "admin"} />
     </main>
   );
 }
