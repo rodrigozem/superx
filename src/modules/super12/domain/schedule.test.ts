@@ -108,21 +108,27 @@ describe("generateSchedule — Super 6 completo", () => {
     11,
   );
 
-  it("gera 5 rodadas / 5 jogos / 1 por rodada", () => {
-    expect(schedule.rounds).toHaveLength(5);
-    expect(schedule.matches).toHaveLength(5);
+  it("gera 6 rodadas / 6 jogos / 1 por rodada", () => {
+    expect(schedule.rounds).toHaveLength(6);
+    expect(schedule.matches).toHaveLength(6);
     for (const round of schedule.rounds) expect(round.matches).toHaveLength(1);
   });
 
-  it("não repete dupla e equilibra descansos", () => {
+  it("é competitivo: todos jogam 4, descansam 2 e não repetem dupla", () => {
     assertNoDoubleBooking(schedule);
     expect(schedule.metrics.partnerRepeatPairs).toBe(0);
-    expect(schedule.metrics.byesPerPlayerMin).toBeGreaterThanOrEqual(1);
-    expect(schedule.metrics.byesPerPlayerMax).toBeLessThanOrEqual(2);
+    expect(schedule.metrics.byesPerPlayerMin).toBe(2);
+    expect(schedule.metrics.byesPerPlayerMax).toBe(2);
     const counts = [...gamesPerPlayer(schedule).values()];
-    expect(Math.min(...counts)).toBeGreaterThanOrEqual(3);
-    expect(Math.max(...counts)).toBeLessThanOrEqual(4);
+    expect(Math.min(...counts)).toBe(4);
+    expect(Math.max(...counts)).toBe(4);
     expect(FORMAT_PLAYERS.SUPER6).toBe(6);
+  });
+
+  it("todo par de atletas se enfrenta como adversário", () => {
+    expect(uncoveredPairs(schedule)).toBe(0);
+    expect(schedule.metrics.opponentMeetingHistogram[0] ?? 0).toBe(0);
+    expect(schedule.metrics.relaxed).toBe(false);
   });
 
   it("é determinístico", () => {
@@ -160,10 +166,12 @@ describe("generateSchedule — Super 6 completo", () => {
         makePlayers(6),
         seed,
       );
-      expect(current.matches, `seed ${seed}`).toHaveLength(5);
+      expect(current.matches, `seed ${seed}`).toHaveLength(6);
       assertNoDoubleBooking(current);
       expect(current.metrics.partnerRepeatPairs, `seed ${seed}`).toBe(0);
-      expect(current.metrics.byesPerPlayerMin, `seed ${seed}`).toBeGreaterThanOrEqual(1);
+      expect(current.metrics.byesPerPlayerMin, `seed ${seed}`).toBe(2);
+      expect(current.metrics.byesPerPlayerMax, `seed ${seed}`).toBe(2);
+      expect(uncoveredPairs(current), `seed ${seed}`).toBe(0);
     }
   });
 });

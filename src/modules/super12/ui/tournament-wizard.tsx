@@ -73,7 +73,7 @@ function modesFor(format: Format): ScheduleMode[] {
 
 /** Rodadas da tabela "todos contra todos" em cada formato. */
 const FULL_ROUNDS: Record<Format, number> = {
-  SUPER6: 5,
+  SUPER6: 6,
   SUPER8: 7,
   SUPER10: 10,
   SUPER12: 11,
@@ -85,11 +85,11 @@ function defaultRounds(format: Format): number {
 }
 
 const FORMAT_HELP =
-  "Quantos atletas o torneio exige: Super 6 = 6, Super 8 = 8, Super 10 = 10, Super 12 = 12. A tabela completa tem 5 rodadas no Super 6, 7 no Super 8 e 11 no Super 12; o Super 10 usa os modos Equilibrado e Parceiro de todos.";
+  "Quantos atletas o torneio exige: Super 6 = 6, Super 8 = 8, Super 10 = 10, Super 12 = 12. A tabela completa tem 6 rodadas no Super 6, 7 no Super 8 e 11 no Super 12; o Super 10 usa os modos Equilibrado e Parceiro de todos.";
 
 const SCHEDULE_HELP: Record<Format, string> = {
   SUPER6:
-    "Completo: 5 rodadas; cada rodada tem 1 jogo e 1 dupla descansa. Reduzido: você escolhe de 1 a 5 rodadas e o sistema mantém as que melhor equilibram os confrontos e os descansos.",
+    "Completo: 6 rodadas; cada rodada tem 1 jogo e 1 dupla descansa. Todos jogam 4 jogos, descansam 2, têm parceiros distintos e todo par se enfrenta. Reduzido: você escolhe de 1 a 6 rodadas.",
   SUPER8:
     "Completo: todos contra todos — 7 rodadas e 14 jogos. Reduzido: você escolhe de 1 a 7 rodadas e o sistema mantém as que melhor equilibram os confrontos e os descansos.",
   SUPER10:

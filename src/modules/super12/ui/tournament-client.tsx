@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ChangeEvent,
   type FormEvent,
 } from "react";
 
@@ -16,6 +17,7 @@ import {
   getDb,
   renameTournament,
   setActiveTournament,
+  setTournamentImage,
 } from "@/modules/super12/data";
 
 import {
@@ -24,6 +26,7 @@ import {
   SCHEDULE_MODE_LABEL,
 } from "./labels";
 import { TvIcon } from "./icons";
+import { fileToTournamentImage } from "./image-utils";
 import { RoundsView } from "./rounds-view";
 import { StandingsTable } from "./standings-table";
 import { StandingsTvPanel } from "./standings-tv";
@@ -42,6 +45,8 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   // Referência estável: um onClose novo a cada re-render faria o painel da TV
   // rodar o cleanup do efeito e derrubar a tela cheia a cada resultado salvo.
   const closeTv = useCallback(() => setTvOpen(false), []);
@@ -127,6 +132,32 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
     }
   }
 
+  async function handleImagePick(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImageError(null);
+    setImageBusy(true);
+    try {
+      const image = await fileToTournamentImage(file);
+      const result = await setTournamentImage(id, image, db);
+      if (!result.ok) setImageError(result.error);
+    } catch {
+      setImageError("Não foi possível processar a imagem.");
+    } finally {
+      setImageBusy(false);
+    }
+  }
+
+  async function handleImageRemove() {
+    setImageError(null);
+    setImageBusy(true);
+    const result = await setTournamentImage(id, undefined, db);
+    if (!result.ok) setImageError(result.error);
+    setImageBusy(false);
+  }
+
   const openTvMode = () => {
     setTvOpen(true);
     const request = document.documentElement.requestFullscreen?.();
@@ -136,15 +167,53 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-navy-800 dark:bg-navy-900">
-        {tournament.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={tournament.image}
-            alt={`Imagem do torneio ${tournament.name}`}
-            width={489}
-            height={275}
-            className="mb-4 h-auto w-full max-w-[489px] rounded-lg object-cover"
-          />
+        {tournament.image || isAdmin ? (
+          <div className="mb-4 space-y-2">
+            {tournament.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={tournament.image}
+                alt={`Imagem do torneio ${tournament.name}`}
+                width={489}
+                height={275}
+                className="h-auto w-full max-w-[360px] rounded-lg object-cover"
+              />
+            ) : null}
+
+            {isAdmin ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700">
+                  {tournament.image ? "Alterar imagem" : "Adicionar imagem"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={imageBusy}
+                    onChange={handleImagePick}
+                  />
+                </label>
+                {tournament.image ? (
+                  <button
+                    type="button"
+                    onClick={handleImageRemove}
+                    disabled={imageBusy}
+                    className="text-xs font-medium text-red-600 underline disabled:opacity-40 dark:text-red-400"
+                  >
+                    Remover imagem
+                  </button>
+                ) : null}
+                {imageBusy ? (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Processando…
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+
+            {imageError ? (
+              <p className="text-sm text-red-600 dark:text-red-400">{imageError}</p>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="flex flex-wrap items-start justify-between gap-4">

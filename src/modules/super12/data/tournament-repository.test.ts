@@ -87,7 +87,7 @@ describe("createTournament", () => {
     await expect(listTournaments(db)).resolves.toHaveLength(1);
   });
 
-  it("gera Super 6 com 5 rodadas e 5 jogos", async () => {
+  it("gera Super 6 com 6 rodadas e 6 jogos", async () => {
     const result = await createTournament(
       draft({
         format: "SUPER6",
@@ -103,9 +103,9 @@ describe("createTournament", () => {
     if (!result.ok) return;
 
     const matches = await listMatches(result.data.id, db);
-    expect(matches).toHaveLength(5);
-    expect(new Set(matches.map((match) => match.round)).size).toBe(5);
-    expect(Object.keys(result.data.byesByRound)).toHaveLength(5);
+    expect(matches).toHaveLength(6);
+    expect(new Set(matches.map((match) => match.round)).size).toBe(6);
+    expect(Object.keys(result.data.byesByRound)).toHaveLength(6);
   });
 
   it("gera Super 10 com 10 rodadas e 20 jogos", async () => {
@@ -218,7 +218,7 @@ describe("createTournament", () => {
     expect(complete.ok).toBe(true);
   });
 
-  it("valida Super 6 reduzido com no máximo 5 rodadas", () => {
+  it("valida Super 6 reduzido com no máximo 6 rodadas", () => {
     const sixPlayers = Array.from({ length: 6 }, (_, index) => ({
       name: `Atleta ${index + 1}`,
     }));
@@ -227,7 +227,7 @@ describe("createTournament", () => {
       draft({
         format: "SUPER6",
         scheduleMode: "REDUZIDO",
-        rounds: 5,
+        rounds: 6,
         players: sixPlayers,
       }),
     );
@@ -237,12 +237,12 @@ describe("createTournament", () => {
       draft({
         format: "SUPER6",
         scheduleMode: "REDUZIDO",
-        rounds: 6,
+        rounds: 7,
         players: sixPlayers,
       }),
     );
     expect(tooMany.ok).toBe(false);
-    if (!tooMany.ok) expect(tooMany.fieldErrors.rounds).toContain("5");
+    if (!tooMany.ok) expect(tooMany.fieldErrors.rounds).toContain("6");
   });
 
   it("mantém a mesma tabela para a mesma seed e muda com outra seed", async () => {

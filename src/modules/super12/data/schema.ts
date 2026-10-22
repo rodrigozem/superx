@@ -113,7 +113,7 @@ export const createTournamentSchema = z
 
     if (draft.scheduleMode === "REDUZIDO" && draft.format !== "SUPER10") {
       const maxRounds =
-        draft.format === "SUPER6" ? 5 : draft.format === "SUPER8" ? 7 : 11;
+        draft.format === "SUPER6" ? 6 : draft.format === "SUPER8" ? 7 : 11;
       if (draft.rounds === undefined) {
         ctx.addIssue({
           code: "custom",

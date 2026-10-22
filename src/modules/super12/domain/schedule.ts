@@ -320,10 +320,32 @@ function pickBestRounds(
 }
 
 /**
+ * Super 6 — tabela equilibrada: 6 rodadas, 1 jogo por rodada e 1 dupla
+ * descansando. A construção garante que todos jogam exatamente 4 jogos,
+ * descansam 2, têm 4 parceiros distintos e todo par de atletas se enfrenta
+ * como adversário. (Em 5 rodadas as 20 vagas não dividem por 6: alguém
+ * inevitavelmente jogaria mais que outro.)
+ */
+function super6Balanced(): RoundPairs[] {
+  const base: [Pair, Pair, number[]][] = [
+    [[0, 1], [2, 4], [3, 5]],
+    [[0, 2], [3, 5], [1, 4]],
+    [[0, 3], [1, 5], [2, 4]],
+    [[0, 4], [1, 2], [3, 5]],
+    [[1, 3], [4, 5], [0, 2]],
+    [[2, 5], [3, 4], [0, 1]],
+  ];
+
+  return base.map(([teamA, teamB, resting]) => ({
+    pairs: [teamA, teamB],
+    restingPlayers: resting,
+  }));
+}
+
+/**
  * Modo "Parceiro de todos" para formatos com número ímpar de duplas por
- * rodada (Super 6 = 3 duplas, Super 10 = 5 duplas): usa o método do círculo
- * (cada par é parceiro uma vez) e descansa 1 dupla por rodada. O backtracking
- * exige que todo atleta descanse 1 ou 2 rodadas.
+ * rodada (Super 10 = 5 duplas): usa o método do círculo (cada par é parceiro
+ * uma vez) e descansa 1 dupla por rodada.
  */
 function partnerOfAll(n: number, seed: number): RoundPairs[] {
   const rng = createRng(seed);
@@ -660,9 +682,6 @@ function buildSchedule(
 
   const metrics = computeMetrics(players, rounds, matches);
   if (
-    // No Super 6 são só 5 jogos (1 por rodada, 1 dupla descansa): é esperado
-    // que alguns pares não se enfrentem, então não há o que "relaxar".
-    config.format !== "SUPER6" &&
     config.scheduleMode !== "REDUZIDO" &&
     (metrics.opponentMeetingHistogram[0] ?? 0) > 0
   ) {
@@ -714,7 +733,7 @@ export function generateSchedule(
     }
   } else if (config.format === "SUPER6") {
     // 6 atletas = 3 duplas por rodada: 2 jogam (1 jogo) e 1 dupla descansa.
-    const all = partnerOfAll(6, seed);
+    const all = super6Balanced();
     const isReduced = config.scheduleMode === "REDUZIDO";
     const count = isReduced
       ? clamp(Math.round(config.rounds ?? all.length), 1, all.length)

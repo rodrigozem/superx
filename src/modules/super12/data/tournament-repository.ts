@@ -152,6 +152,27 @@ export async function renameTournament(
   return { ok: true, data: updated };
 }
 
+export async function setTournamentImage(
+  id: string,
+  image: string | undefined,
+  db: SuperTournamentDatabase = getDb(),
+): Promise<RepositoryResult<StoredTournament>> {
+  const tournament = await db.tournaments.get(id);
+  if (!tournament) return { ok: false, error: "Torneio não encontrado." };
+
+  const updated: StoredTournament = { ...tournament, updatedAt: now() };
+  if (image) {
+    updated.image = image;
+  } else {
+    delete updated.image;
+  }
+
+  await db.tournaments.put(updated);
+  notifyLocalChange();
+
+  return { ok: true, data: updated };
+}
+
 export async function listMatches(
   tournamentId: string,
   db: SuperTournamentDatabase = getDb(),
