@@ -27,6 +27,7 @@ import {
 } from "./labels";
 import { TvIcon } from "./icons";
 import { fileToTournamentImage } from "./image-utils";
+import { PlayersModal } from "./players-modal";
 import { RoundsView } from "./rounds-view";
 import { StandingsTable } from "./standings-table";
 import { StandingsTvPanel } from "./standings-tv";
@@ -45,6 +46,7 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [playersOpen, setPlayersOpen] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   // Referência estável: um onClose novo a cada re-render faria o painel da TV
@@ -270,13 +272,22 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
                       {tournament.name}
                     </h2>
                     {isAdmin ? (
-                      <button
-                        type="button"
-                        onClick={startRename}
-                        className="rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
-                      >
-                        Editar nome
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={startRename}
+                          className="rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
+                        >
+                          Editar nome
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlayersOpen(true)}
+                          className="rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:bg-navy-800 dark:text-zinc-200 dark:hover:bg-navy-700"
+                        >
+                          Editar participantes
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 )}
@@ -409,6 +420,13 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
           finished={finished}
           total={matches.length}
           onClose={closeTv}
+        />
+      ) : null}
+
+      {playersOpen ? (
+        <PlayersModal
+          tournament={tournament}
+          onClose={() => setPlayersOpen(false)}
         />
       ) : null}
     </div>

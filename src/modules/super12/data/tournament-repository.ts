@@ -152,6 +152,51 @@ export async function renameTournament(
   return { ok: true, data: updated };
 }
 
+export async function updatePlayerNames(
+  tournamentId: string,
+  names: Record<string, string>,
+  db: SuperTournamentDatabase = getDb(),
+): Promise<RepositoryResult<StoredTournament>> {
+  const tournament = await db.tournaments.get(tournamentId);
+  if (!tournament) return { ok: false, error: "Torneio não encontrado." };
+
+  const updatedNames = new Map<string, string>();
+  const seen = new Set<string>();
+
+  for (const player of tournament.players) {
+    const raw = names[player.id] ?? player.name;
+    const name = raw.trim();
+
+    if (name.length === 0) {
+      return { ok: false, error: "Informe o nome de todos os atletas." };
+    }
+    if (name.length > 40) {
+      return { ok: false, error: "Use no máximo 40 caracteres por atleta." };
+    }
+
+    const key = name.toLocaleLowerCase("pt-BR");
+    if (seen.has(key)) {
+      return { ok: false, error: `Já existe um atleta com o nome "${name}".` };
+    }
+    seen.add(key);
+    updatedNames.set(player.id, name);
+  }
+
+  const updated: StoredTournament = {
+    ...tournament,
+    players: tournament.players.map((player) => ({
+      ...player,
+      name: updatedNames.get(player.id) ?? player.name,
+    })),
+    updatedAt: now(),
+  };
+
+  await db.tournaments.put(updated);
+  notifyLocalChange();
+
+  return { ok: true, data: updated };
+}
+
 export async function setTournamentImage(
   id: string,
   image: string | undefined,

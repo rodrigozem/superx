@@ -15,6 +15,7 @@ import {
   listTournaments,
   recordScore,
   renameTournament,
+  updatePlayerNames,
 } from "./tournament-repository";
 import type { StoredMatch, StoredTournament } from "./types";
 
@@ -370,6 +371,61 @@ describe("renameTournament", () => {
   it("retorna erro quando o torneio não existe", async () => {
     await expect(
       renameTournament("nao-existe", "Novo nome", db),
+    ).resolves.toMatchObject({ ok: false });
+  });
+});
+
+describe("updatePlayerNames", () => {
+  it("altera, faz trim e persiste os nomes dos atletas", async () => {
+    const created = await createTournament(draft(), db);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const [first, second] = created.data.players;
+    const result = await updatePlayerNames(
+      created.data.id,
+      { [first.id]: "  Ana  ", [second.id]: "Bia" },
+      db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.players[0].name).toBe("Ana");
+    expect(result.data.players[1].name).toBe("Bia");
+    expect(result.data.players[2].name).toBe("Atleta 3");
+
+    const stored = await db.tournaments.get(created.data.id);
+    expect(stored?.players[0].name).toBe("Ana");
+    expect(stored?.players[1].name).toBe("Bia");
+  });
+
+  it("rejeita nome vazio ou repetido e não persiste", async () => {
+    const created = await createTournament(draft(), db);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const [first, second] = created.data.players;
+
+    await expect(
+      updatePlayerNames(created.data.id, { [first.id]: "   " }, db),
+    ).resolves.toMatchObject({ ok: false });
+
+    await expect(
+      updatePlayerNames(
+        created.data.id,
+        { [first.id]: "Bia", [second.id]: "bia" },
+        db,
+      ),
+    ).resolves.toMatchObject({ ok: false });
+
+    const stored = await db.tournaments.get(created.data.id);
+    expect(stored?.players[0].name).toBe("Atleta 1");
+    expect(stored?.players[1].name).toBe("Atleta 2");
+  });
+
+  it("retorna erro quando o torneio não existe", async () => {
+    await expect(
+      updatePlayerNames("nao-existe", {}, db),
     ).resolves.toMatchObject({ ok: false });
   });
 });
