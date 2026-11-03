@@ -55,13 +55,13 @@ export function ScoreModal({
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={editing ? "Editar placar" : "Informar placar"}
-        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-zinc-200 bg-white p-4 shadow-2xl dark:border-navy-700 dark:bg-navy-900 sm:rounded-2xl sm:p-5"
+        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl dark:border-navy-700 dark:bg-navy-900 sm:p-5"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
