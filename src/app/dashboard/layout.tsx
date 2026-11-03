@@ -23,7 +23,7 @@ export default async function DashboardLayout({
               width={800}
               height={366}
               priority
-              className="h-8 w-auto shrink-0 sm:h-9"
+              className="h-10 w-auto shrink-0 sm:h-12"
             />
           </div>
 
