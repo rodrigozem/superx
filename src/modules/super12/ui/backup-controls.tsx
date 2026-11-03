@@ -17,7 +17,14 @@ type BackupState =
 const buttonClass =
   "rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700";
 
-export function BackupControls() {
+type BackupControlsProps = {
+  orientation?: "horizontal" | "vertical";
+};
+
+export function BackupControls({
+  orientation = "horizontal",
+}: BackupControlsProps) {
+  const vertical = orientation === "vertical";
   const db = getDb();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<BackupState>({ kind: "idle" });
@@ -70,14 +77,25 @@ export function BackupControls() {
   const busy = state.kind === "working";
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <button type="button" className={buttonClass} disabled={busy} onClick={() => void handleExport()}>
+    <div className={vertical ? "flex flex-col gap-2" : "flex flex-col items-end gap-2"}>
+      <div
+        className={
+          vertical
+            ? "flex flex-col gap-2"
+            : "flex flex-wrap items-center justify-end gap-2"
+        }
+      >
+        <button
+          type="button"
+          className={vertical ? `${buttonClass} w-full` : buttonClass}
+          disabled={busy}
+          onClick={() => void handleExport()}
+        >
           Exportar backup
         </button>
         <button
           type="button"
-          className={buttonClass}
+          className={vertical ? `${buttonClass} w-full` : buttonClass}
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >

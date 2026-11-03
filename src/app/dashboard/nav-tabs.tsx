@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { ConfigMenu } from "./config-menu";
+
 export type NavTab = { href: string; label: string; adminOnly?: boolean };
 
 export const NAV_TABS: NavTab[] = [
@@ -42,8 +44,9 @@ export function NavTabs({ isAdmin }: { isAdmin: boolean }) {
           >
             {tab.label}
           </Link>
-        );
-      })}
+          );
+        })}
+      <ConfigMenu variant="desktop" />
     </nav>
   );
 }

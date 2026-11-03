@@ -4,7 +4,6 @@ import { requireUser } from "@/lib/dal";
 
 import { InstallPrompt } from "@/components/install-prompt";
 
-import { BackupControls } from "@/modules/super12/ui/backup-controls";
 import { TournamentList } from "@/modules/super12/ui/tournament-list";
 
 export const metadata = {
@@ -36,15 +35,6 @@ export default async function TournamentsPage() {
             Novo torneio
           </Link>
         </div>
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-navy-800 dark:bg-navy-900">
-        <p className="max-w-md text-xs text-zinc-500 dark:text-zinc-400">
-          Os torneios ficam salvos neste navegador e sobem para a nuvem
-          automaticamente sempre que houver internet. Exporte um backup para
-          levar os dados manualmente ou recuperá-los.
-        </p>
-        <BackupControls />
       </div>
 
       <TournamentList />

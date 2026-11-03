@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { isNavTabActive, visibleNavTabs } from "./nav-tabs";
+import { ConfigMenu } from "./config-menu";
 
 export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
@@ -117,6 +118,7 @@ export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
                       </Link>
                     );
                   })}
+                  <ConfigMenu variant="mobile" />
                 </nav>
               </aside>
             </div>,
