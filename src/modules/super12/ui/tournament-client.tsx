@@ -25,9 +25,10 @@ import {
   FORMAT_LABEL,
   SCHEDULE_MODE_LABEL,
 } from "./labels";
-import { TvIcon } from "./icons";
+import { TvIcon, DownloadIcon, TrophyIcon } from "./icons";
 import { fileToTournamentImage } from "./image-utils";
 import { PlayersModal } from "./players-modal";
+import { exportRoundsPdf, exportStandingsPdf } from "./pdf-export";
 import { RoundsView } from "./rounds-view";
 import { StandingsTable } from "./standings-table";
 import { StandingsTvPanel } from "./standings-tv";
@@ -49,6 +50,8 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
   const [playersOpen, setPlayersOpen] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState<"rounds" | "standings" | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   // Referência estável: um onClose novo a cada re-render faria o painel da TV
   // rodar o cleanup do efeito e derrubar a tela cheia a cada resultado salvo.
   const closeTv = useCallback(() => setTvOpen(false), []);
@@ -109,6 +112,7 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
   }
 
   const finished = matches.filter((match) => match.status === "FINALIZADO").length;
+  const allFinished = matches.length > 0 && finished === matches.length;
   const showByes = Object.keys(tournament.byesByRound).length > 0;
   const progressPct =
     matches.length > 0 ? Math.round((finished / matches.length) * 100) : 0;
@@ -175,6 +179,37 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
     const result = await setTournamentImage(id, undefined, db);
     if (!result.ok) setImageError(result.error);
     setImageBusy(false);
+  }
+
+  async function handleRoundsPdf() {
+    if (!tournament) return;
+    setPdfError(null);
+    setPdfBusy("rounds");
+    try {
+      await exportRoundsPdf({ tournament, matches: orderedMatches });
+    } catch {
+      setPdfError("Não foi possível gerar o PDF das rodadas.");
+    } finally {
+      setPdfBusy(null);
+    }
+  }
+
+  async function handleStandingsPdf() {
+    if (!tournament || !matches) return;
+    setPdfError(null);
+    setPdfBusy("standings");
+    try {
+      await exportStandingsPdf({
+        tournament,
+        standings,
+        finished,
+        total: matches.length,
+      });
+    } catch {
+      setPdfError("Não foi possível gerar o PDF da classificação.");
+    } finally {
+      setPdfBusy(null);
+    }
   }
 
   const openTvMode = () => {
@@ -360,7 +395,7 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {(
           [
             ["RODADAS", "Rodadas"],
@@ -381,17 +416,49 @@ export function TournamentClient({ id, isAdmin }: TournamentClientProps) {
           </button>
         ))}
 
-        <button
-          type="button"
-          onClick={openTvMode}
-          title="Modo TV — classificação em tela cheia"
-          aria-label="Abrir classificação em modo TV"
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
-        >
-          <TvIcon className="h-4 w-4" />
-          TV
-        </button>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleRoundsPdf()}
+            disabled={pdfBusy !== null}
+            title="Gerar PDF com a tabela de todas as rodadas"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
+          >
+            <DownloadIcon className="h-4 w-4" />
+            {pdfBusy === "rounds" ? "Gerando…" : "PDF rodadas"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleStandingsPdf()}
+            disabled={pdfBusy !== null || !allFinished}
+            title={
+              allFinished
+                ? "Gerar PDF da classificação final"
+                : "Disponível quando todos os jogos forem finalizados"
+            }
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
+          >
+            <TrophyIcon className="h-4 w-4" />
+            {pdfBusy === "standings" ? "Gerando…" : "PDF ranking"}
+          </button>
+
+          <button
+            type="button"
+            onClick={openTvMode}
+            title="Modo TV — classificação em tela cheia"
+            aria-label="Abrir classificação em modo TV"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 dark:bg-navy-800 px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-zinc-200 dark:border-navy-600 dark:text-zinc-200 dark:hover:bg-navy-700"
+          >
+            <TvIcon className="h-4 w-4" />
+            TV
+          </button>
+        </div>
       </div>
+
+      {pdfError ? (
+        <p className="-mt-2 text-sm text-red-600 dark:text-red-400">{pdfError}</p>
+      ) : null}
 
       {tab === "RODADAS" ? (
         <RoundsView tournament={tournament} matches={orderedMatches} />
