@@ -152,6 +152,26 @@ export async function renameTournament(
   return { ok: true, data: updated };
 }
 
+export async function setTournamentStatus(
+  id: string,
+  status: StoredTournament["status"],
+  db: SuperTournamentDatabase = getDb(),
+): Promise<RepositoryResult<StoredTournament>> {
+  const tournament = await db.tournaments.get(id);
+  if (!tournament) return { ok: false, error: "Torneio não encontrado." };
+
+  const updated: StoredTournament = {
+    ...tournament,
+    status,
+    updatedAt: now(),
+  };
+
+  await db.tournaments.put(updated);
+  notifyLocalChange();
+
+  return { ok: true, data: updated };
+}
+
 export async function updatePlayerNames(
   tournamentId: string,
   names: Record<string, string>,

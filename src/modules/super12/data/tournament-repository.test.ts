@@ -15,6 +15,7 @@ import {
   listTournaments,
   recordScore,
   renameTournament,
+  setTournamentStatus,
   updatePlayerNames,
 } from "./tournament-repository";
 import type { StoredMatch, StoredTournament } from "./types";
@@ -371,6 +372,28 @@ describe("renameTournament", () => {
   it("retorna erro quando o torneio não existe", async () => {
     await expect(
       renameTournament("nao-existe", "Novo nome", db),
+    ).resolves.toMatchObject({ ok: false });
+  });
+});
+
+describe("setTournamentStatus", () => {
+  it("encerra o torneio e persiste", async () => {
+    const created = await createTournament(draft(), db);
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const result = await setTournamentStatus(created.data.id, "ENCERRADO", db);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.status).toBe("ENCERRADO");
+
+    const stored = await db.tournaments.get(created.data.id);
+    expect(stored?.status).toBe("ENCERRADO");
+  });
+
+  it("retorna erro quando o torneio não existe", async () => {
+    await expect(
+      setTournamentStatus("nao-existe", "ENCERRADO", db),
     ).resolves.toMatchObject({ ok: false });
   });
 });
